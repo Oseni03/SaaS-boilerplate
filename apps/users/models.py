@@ -1,0 +1,139 @@
+import hashid_field
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.contrib.auth.models import BaseUserManager
+from django.contrib.auth.models import Group
+from django.db import models
+
+from common.acl.helpers import CommonGroups
+from common.models import ImageWithThumbnailMixin
+from common.storages import UniqueFilePathGenerator, PublicS3Boto3StorageWithCDN
+
+# from . import notifications
+
+import djstripe
+
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None):
+        if not email:
+            raise ValueError("Users must have an email address")
+
+        user = self.model(
+            email=self.normalize_email(email).lower(),
+        )
+        user.set_password(password)
+        group_user, _ = Group.objects.get_or_create(name=CommonGroups.User)
+        user.save(using=self._db)
+        user.groups.add(group_user)
+        UserProfile.objects.create(user=user)
+
+        return user
+
+    def create_superuser(self, email, password):
+        user = self.create_user(
+            email,
+            password=password,
+        )
+        group_admin, _ = Group.objects.get_or_create(name=CommonGroups.Admin)
+        user.is_superuser = True
+        user.groups.add(group_admin)
+        user.save(using=self._db)
+        return user
+
+    def filter_admins(self):
+        return self.filter(groups__name=CommonGroups.Admin)
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    id = hashid_field.HashidAutoField(primary_key=True)
+    created = models.DateTimeField(editable=False, auto_now_add=True)
+    email = models.EmailField(
+        verbose_name="email address",
+        max_length=255,
+        unique=True,
+    )
+    is_confirmed = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
+    
+    otp_enabled = models.BooleanField(default=False)
+    otp_verified = models.BooleanField(default=False)
+    otp_base32 = models.CharField(max_length=255, blank=True, default='')
+    otp_auth_url = models.CharField(max_length=255, blank=True, default='')
+
+    objects = UserManager()
+
+    USERNAME_FIELD = "email"
+
+    def __str__(self) -> str:
+        return self.email
+
+    @property
+    def is_staff(self):
+        return self.is_superuser
+
+    def has_group(self, name):
+        return self.groups.filter(name=name).exists()
+    
+    @property
+    def get_roles(self):
+        from .services.users import get_role_names
+        return get_role_names(self.user)
+    
+    def send_email(self, subject, message, due_time=None):
+        from . import notifications
+        notifications.CustomMail(
+            user=self, 
+            data={
+                'user_id': self.id.hashid, 
+                'subject': subject, 
+                'message': message
+            }
+        ).send(due_time)
+    
+    def get_customer(self):
+        customer = djstripe.models.Customer.filter(subscriber=self)
+        if customer.exists():
+            return customer.first()
+        return None
+    
+    @property
+    def subscription(self):
+        customer = self.get_customer()
+        if customer:
+            return customer.subscription
+        return None
+    
+    @property
+    def is_subscriped(self):
+        customer = self.get_customer()
+        if customer:
+            return customer.has_any_active_subscription()
+        return False
+
+
+class UserAvatar(ImageWithThumbnailMixin, models.Model):
+    original = models.ImageField(
+        storage=PublicS3Boto3StorageWithCDN, upload_to=UniqueFilePathGenerator("avatars"), null=True
+    )
+    thumbnail = models.ImageField(
+        storage=PublicS3Boto3StorageWithCDN, upload_to=UniqueFilePathGenerator("avatars/thumbnails"), null=True
+    )
+
+    THUMBNAIL_SIZE = (128, 128)
+    ERROR_FIELD_NAME = "avatar"
+
+    def __str__(self) -> str:
+        return str(self.id)
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    first_name = models.CharField(max_length=40, blank=True, default='')
+    last_name = models.CharField(max_length=40, blank=True, default='')
+    avatar = models.OneToOneField(
+        UserAvatar, on_delete=models.SET_NULL, null=True, blank=True, related_name="user_profile"
+    )
+
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.last_name}"
