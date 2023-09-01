@@ -1,5 +1,6 @@
 from django import forms 
 from django.conf import settings
+from django.core import validators
 from django.contrib import auth as dj_auth
 from django.contrib.auth import password_validation, get_user_model
 from django.contrib.auth.models import update_last_login
@@ -64,7 +65,7 @@ class UserProfileForm(forms.ModelForm):
 
 class UserSignupForm(forms.ModelForm):
     email = forms.EmailField(
-        validators=[validators.UniqueValidator(queryset=dj_auth.get_user_model().objects.all())],
+        validators=[validators.EmailValidator()],
     )
     password1 = forms.CharField(label="Password", widget=forms.PasswordInput(render_value=True))
     password2 = forms.CharField(label="Confirm Password", widget=forms.PasswordInput(render_value=True))

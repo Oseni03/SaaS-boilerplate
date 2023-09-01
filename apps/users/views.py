@@ -5,6 +5,9 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView, UpdateView
+from django.views.generic import View
+
+from djoser.social.views import ProviderAuthView
 
 from . import notifications, forms
 
@@ -61,7 +64,7 @@ class LoginView(FormView):
                 if user.otp_enabled and user.otp_verified:
                     notifications.OTPAuthMail(user, {"user_id": user.id.hash, "otp_token": str(generate_otp_auth_token(self.user))})
                     messages.info(self.request, "Check your email for otp")
-                else
+                else:
                     login(self.request, user)
                     messages.info(self.request, "Login successful!")
             else:
