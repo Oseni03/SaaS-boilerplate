@@ -1,28 +1,11 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.urls import reverse_lazy
+from django.contrib.auth import logout
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic.edit import FormView, UpdateView
 
-from djoser.social.views import ProviderAuthView
-from rest_framework.views import APIView 
-from rest_framework.response import Response
-from rest_framework import mixins
-from rest_framework import generics
-from rest_framework.decorators import action
-from rest_framework import status
-
-from rest_framework_simplejwt import views as jwt_views
-
-from .serializers import (
-    UserProfileSerializer, PasswordResetSerializer,
-    UserAccountConfirmationSerializer,
-    UserAccountChangePasswordSerializer,
-    UserSignupSerializer,
-    UserAccountResendConfirmationSerializer,
-    PasswordResetConfirmationSerializer,
-    LogoutSerializer, 
-    CookieTokenRefreshSerializer,
-    CookieTokenObtainPairSerializer
-)
-
+from . import notifications, forms
 
 class CustomProvideAuthView(ProviderAuthView):
     def post(self, request, *args, **kwargs):
@@ -53,111 +36,177 @@ class CustomProvideAuthView(ProviderAuthView):
 
 
 # Create your views here.
-class TokenObtainPairView(APIView):
+class LoginView(FormView):
+    form_class = forms.UserLoginForm
+    template_name = "users/login.html" 
+    success_url = reverse_lazy("users:profile") 
+    
     def post(self, request, *args, **kwargs):
-        serializer = CookieTokenObtainPairSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class TokenRefreshView(APIView):
-    def post(self, request, *args, **kwargs):
-        serializer = CookieTokenRefreshSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class TokenVerifyView(jwt_views.TokenVerifyView):
-    def post(self, request, *args, **kwargs):
-        access_token = request.COOKIES.get('access')
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
         
-        if access_token:
-            request.data["token"] = access_token
-        return super().post(request, *args, **kwargs)
+    def form_valid(self, form):
+        password = form.cleaned_data["password"]
+        email = form.cleaned_data["email"]
+        
+        user = authenticate(username=email, password=password)
+        
+        if user is not None:
+            if user.is_active:
+                if user.otp_enabled and user.otp_verified:
+                    notifications.OTPAuthMail(user, {"user_id": user.id.hash, "otp_token": str(generate_otp_auth_token(self.user))})
+                    messages.info(self.request, "Check your email for otp")
+                else
+                    login(self.request, user)
+                    messages.info(self.request, "Login successful!")
+            else:
+                messages.info(self.request, "Check your emial to activate your account!")
+        return super().form_valid()
 
 
-class LogoutView(APIView):
+class LogoutView(View):
     def post(self, request, *args, **kwargs):
-        serializer = LogoutSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logout(request)
+        return render(request, "users/login.html")
 
 
-class MeView(APIView):
+class UserProfileView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        serializer = UserProfileSerializer(data=request.user.profile, many=False)
-        if serializer.is_valid():
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    def put(self, request, *args, **kwargs):
-        serializer = UserProfileSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    def delete(self, request, *args, **kwargs):
-        user = request.user 
-        user.is_active=False 
-        user.save()
-        return Response({}, status=status.HTTP_204_NO_CONTENT)
-
-
-class UserCreateView(mixins.CreateModelMixin, generics.GenericAPIView):
-    queryset = get_user_model().objects.all()
-    serializer_class = UserSignupSerializer
+        profile = UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
+        context = {
+            "profile": profile, 
+            "update_form": forms.UserProfileForm,
+            "password_change_form": forms.UserAccountChangePasswordForm,
+        }
+        return render(request, "users/profile.html", context)
     
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        profile = UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
+        profile_data = {
+            "first_name": profile.first_name,
+            "last_name": profile.last_name,
+            # "email": request.user.email,
+            "avatar": profile.avatar,
+        }
+        
+        update_form = forms.UserProfileForm(request.POST, initial=profile_data)
+        if update_form.has_changed():
+            if update_form.is_valid():
+                update_form.update(profile)
+                messages.success(self.request, "Profile update successful!")
+            else:
+                for error in update_form.errors:
+                    messages.error(self.request, error)
+        
+        context = {
+            "profile": profile, 
+            "update_form": update_form,
+            "password_change_form": forms.UserAccountChangePasswordForm,
+        }
+        
+        if request.POST.get("new_password") != "":
+            password_change_form = forms.UserAccountChangePasswordForm(request.POST)
+            if password_change_form.is_valid():
+                password_change_form.save()
+                messages.success(self.request, "Password change successful!")
+            else:
+                for error in password_change_form.errors:
+                    messages.error(self.request, error)
+            context["password_change_form"] = password_change_form
+        return render(request, "users/profile.html", context)
 
 
-class AccountConfirmationView(APIView):
+class SignUpView(FormView):
+    form_class = forms.UserSignupForm
+    template_name = "users/signup.html" 
+    success_url = reverse_lazy("users:signup_confirm") 
+    
+    def post(self, request, *args, **kwargs):
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+        
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid()
+
+
+class AccountConfirmationView(View):
     def post(self, request, user, token, *args, **kwargs):
-        serializer = UserAccountConfirmationSerializer(data={"user": user, "token": token})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        form = forms.UserAccountConfirmationForm(data={"user": user, "token": token})
+        if form.is_valid():
+            form.save()
+            return render(request, "users/login.html")
+        for error in form.errors:
+            messages.error(request, error)
+        return render(request, "users/signup_confirm.html")
 
 
-class UserAccountResendConfirmationView(APIView):
+class UserAccountResendConfirmationView(FormView):
+    form_class = forms.UserAccountResendConfirmationForm
+    template_name = "users/confirmation_resend.html" 
+    success_url = reverse_lazy("users:signup_confirm") 
+    
     def post(self, request, *args, **kwargs):
-        serializer = UserAccountResendConfirmationSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            for error in form.errors:
+                messages.error(request, error)
+            return self.form_invalid(form)
+        
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid()
     
 
-class UserAccountChangePasswordView(APIView):
+class PasswordResetView(FormView):
+    form_class = forms.PasswordResetForm
+    template_name = "users/password_reset.html" 
+    success_url = reverse_lazy("users:password_reset_confirm") 
+    
     def post(self, request, *args, **kwargs):
-        serializer = UserAccountChangePasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            for error in form.errors:
+                messages.error(request, error)
+            return self.form_invalid(form)
+        
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid()
 
 
-class PasswordResetView(APIView):
-    def post(self, request, *args, **kwargs):
-        serializer = PasswordResetSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class PasswordResetConfirmationView(APIView):
+class PasswordResetConfirmationView(View):
+    
     def post(self, request, user, token, *args, **kwargs):
-        serializer = PasswordResetConfirmationSerializer(data={"user": user, "token": token})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        initial = {
+            "user": user,
+            "token": token,
+            "new_password": "",
+            "re_new_password": "",
+        }
+        form = forms.PasswordResetConfirmationForm(request.POST, initial=initial)
+        if form.has_changed():
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Password reset successful!")
+                return render(request, "users/login.html")
+            for error in form.errors:
+                messages.error(request, error)
+        return render(request, "users/password_reset_confirm.html", {"form": form})
+        
+        
+        

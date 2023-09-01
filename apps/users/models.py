@@ -80,17 +80,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         from .services.users import get_role_names
         return get_role_names(self.user)
     
-    def send_email(self, subject, message, due_time=None):
-        from . import notifications
-        notifications.CustomMail(
-            user=self, 
-            data={
-                'user_id': self.id.hashid, 
-                'subject': subject, 
-                'message': message
-            }
-        ).send(due_time)
-    
     def get_customer(self):
         customer = djstripe.models.Customer.filter(subscriber=self)
         if customer.exists():

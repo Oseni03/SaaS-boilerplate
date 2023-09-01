@@ -11,20 +11,19 @@ class UserEmail(emails.Email):
         super().__init__(to=user.email, data=data)
 
 
-class CustomMail(UserEmail):
+class OTPAuthMail(UserEmail):
     """
     To call:
-        notifications.CustomMail(
+        notifications.OTPAuthMail(
             user=user, 
             data={
                 'user_id': user.id.hashid, 
-                'subject': 'Subscription Reminder', 
-                'message': 'message'
+                'token': 'jgdrjh568832'
             }
         ).send()
     """
-    name = 'CUSTOM_MAIL'
-    serializer_class = email_serializers.CustomMailSerializer
+    name = 'OTP_AUTH_MAIL'
+    serializer_class = email_serializers.OTPAuthSerializer
 
 
 class AccountActivationEmail(UserEmail):

@@ -1,9 +1,8 @@
 from rest_framework import serializers
 
-class CustomMailSerializer(serializers.Serializer):
+class OTPAuthSerializer(serializers.Serializer):
     user_id = serializers.CharField()
-    subject = serializers.CharField()
-    message = serializers.CharField()
+    otp_token = serializers.CharField()
 
 
 class AccountActivationEmailSerializer(serializers.Serializer):

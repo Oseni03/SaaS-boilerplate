@@ -17,12 +17,12 @@ def send_email(event, context):
     detail = event.get("Detail")
     
     to = detail.get("to")
-    if detail_type == "CUSTOM_MAIL":
+    if detail_type == "OTP_AUTH_MAIL":
         body_html = render_to_string(
-            "emails/custom_mail.html",
+            "emails/otp_authentication.html",
             detail
         )
-        subject = detail.get("subject")
+        subject = ""
     elif detail_type == "SUBSCRIPTION_ERROR":
         body_html = render_to_string(
             "emails/subscription_error.html",

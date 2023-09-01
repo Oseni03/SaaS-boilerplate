@@ -26,30 +26,15 @@ class UserLoginForm(forms.Form):
         widget=forms.EmailInput(attrs={"autocorrect": "off", "autocapitalize": "off"}),
     )
     password = forms.CharField(required=True, widget=forms.PasswordInput())
-    
-    def save(self):
-        password = self.cleaned_data["password"]
-        email = self.cleaned_data["email"]
-        
-        user = authenticate(username=email, password=password)
-        if user is not None:
-            if user.is_active:
-                if user.otp_enabled and user.otp_verified:
-                    ## Send otp to user
-                    # return {"otp_auth_token": str(generate_otp_auth_token(self.user))} 
-                login(user)
-            return user 
-        return user
 
 
 class UserProfileForm(forms.ModelForm):
-    id = rest.HashidSerializerCharField(source_field="users.User.id", source="user.id", read_only=True)
-    email = forms.CharField(source="user.email", read_only=True)
+    # email = forms.EmailField()
     avatar = forms.FileField(required=False)
 
     class Meta:
         model = UserProfile
-        fields = ("first_name", "last_name", "email", "avatar")
+        fields = ("first_name", "last_name", "avatar")
 
     @staticmethod
     def clean_avatar(avatar):
@@ -57,18 +42,24 @@ class UserProfileForm(forms.ModelForm):
             raise ValidationError({"avatar": _("Too large file")}, 'too_large')
         return avatar
 
-    def to_representation(self, instance):
+    def to_representation(self, user):
         self.fields["avatar"] = forms.FileField(source="avatar.thumbnail", default="")
-        return super().to_representation(instance)
+        return super().to_representation(user)
 
-    def update(self, instance, self.cleaned_data):
+    def update(self, user):
         avatar = self.cleaned_data.pop("avatar", None)
+        # email = self.cleaned_data.pop("email")
         if avatar:
-            if not instance.avatar:
-                instance.avatar = UserAvatar()
-            instance.avatar.original = avatar
-            instance.avatar.save()
-        return super().update(instance, self.cleaned_data)
+            if not user.avatar:
+                user.avatar = UserAvatar()
+            user.avatar.original = avatar
+            user.avatar.save()
+        # if email:
+        #     if not user.user:
+        #         user.user = User()
+        #     user.user.email = email
+        #     user.user.save()
+        return super().update(user)
 
 
 class UserSignupForm(forms.ModelForm):
@@ -129,7 +120,6 @@ class UserAccountConfirmationForm(forms.Form):
 
         if not tokens.account_activation_token.check_token(user, token):
             raise exceptions.ValidationError(_("Malformed user account confirmation token"))
-
         return cleaned_data
 
     def save(self, commit=True):
@@ -164,7 +154,7 @@ class UserAccountResendConfirmationForm(forms.Form):
                 user=user, 
                 data={
                     'user_id': user.id.hashid, 
-                    'token': tokens.password_reset_token.make_token(user)
+                    'token': tokens.account_activation_token.make_token(user)
                 }
             ).send()
         return user
@@ -231,4 +221,45 @@ class PasswordResetForm(forms.Form):
                     'user_id': user.id.hashid, 
                     'token': tokens.password_reset_token.make_token(user)}
             ).send()
+        return user
+
+
+class PasswordResetConfirmationForm(forms.Form):
+    # user field is a CharField by design to hide the information whether the user exists or not
+    user = forms.CharField(widget=forms.HiddenInput())
+    new_password = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=True))
+    re_new_password = forms.CharField(label="Confirm New Password", widget=forms.PasswordInput(render_value=True))
+    token = forms.CharField(widget=forms.HiddenInput())
+    
+    def clean_new_password(self):
+        new_password = self.cleaned_data["new_password"]
+        password_validation.validate_password(new_password)
+        return new_password
+
+    def clean(self):
+        attrs = super().clean()
+        token = attrs["token"]
+        user_id = attrs["user"]
+        new_password = attrs["new_password"]
+        re_new_password = attrs["re_new_password"]
+        
+        try:
+            user = models.User.objects.get(pk=user_id)
+        except models.User.DoesNotExist:
+            raise exceptions.ValidationError(_("Malformed password reset token"), 'invalid_token')
+        
+        if not tokens.password_reset_token.check_token(user, token):
+            raise exceptions.ValidationError(_("Malformed password reset token"), 'invalid_token')
+        
+        if not new_password == re_new_password:
+            raise exceptions.ValidationError({"re_new_password": _("Password not match!")}, 'not_match_password')
+        return {**attrs, 'user': user}
+
+    def save(self, commit=True):
+        user = self.cleaned_data.pop("user")
+        new_password = self.cleaned_data.pop("new_password")
+        user.set_password(new_password)
+        jwt.blacklist_user_tokens(user)
+        if commit:
+            user.save()
         return user

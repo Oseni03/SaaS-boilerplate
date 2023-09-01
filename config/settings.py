@@ -212,12 +212,19 @@ SUBSCRIPTION_TRIAL_PERIOD_DAYS = getenv("SUBSCRIPTION_TRIAL_PERIOD_DAYS", defaul
 
 NOTIFICATIONS_STRATEGIES = ["InAppNotificationStrategy"]
 
+ADMINS = [DEFAULT_FROM_EMAIL]
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "class": "django.utils.log.AdminEmailHandler",
+            "include_html": True,
         },
     },
     'root': {
