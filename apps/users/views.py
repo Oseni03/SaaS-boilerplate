@@ -209,5 +209,3 @@ class PasswordResetConfirmationView(View):
                 messages.error(request, error)
         return render(request, "users/password_reset_confirm.html", {"form": form})
         
-        
-        

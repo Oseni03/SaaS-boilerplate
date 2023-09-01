@@ -1,29 +1,15 @@
 from django.urls import path, re_path
 
-from .views import (
-    CustomProvideAuthView,
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView, MeView,
-    LogoutView, UserCreateView,
-    AccountConfirmationView,
-    UserAccountResendConfirmationView,
-    UserAccountChangePasswordView,
-    PasswordResetView, 
-    PasswordResetConfirmationView
-)
+from . import views
 
 urlpatterns = [
-    re_path("^o/(?P<provider>\s+)/$", CustomProvideAuthView.as_view(), name="provider-auth"),
-    path("jwt/create", TokenObtainPairView.as_view()),
-    path("jwt/refresh", TokenRefreshView.as_view()),
-    path("jwt/verify", TokenVerifyView.as_view()),
-    path("auth/logout", LogoutView.as_view()),
-    path("me/", MeView.as_view()),
-    path("activation/{user}/{token}/", AccountConfirmationView.as_view()),
-    path("activation-resend/", UserAccountResendConfirmationView.as_view()),
-    path("set_password/", UserAccountChangePasswordView.as_view()),
-    path("password-reset/", PasswordResetView.as_view()),
-    path("password-reset/{user}/{token}/", PasswordResetConfirmationView.as_view()),
-    path("", UserCreateView.as_view()),
+    re_path("^o/(?P<provider>\s+)/$", views.CustomProvideAuthView.as_view(), name="provider-auth"),
+    path("login/", views.LoginView.as_view(), name="login"),
+    path("logout/", views.LogoutView.as_view(), name="logout"),
+    path("profile/", views.UserProfileView.as_view(), name="profile"),
+    path("signup/", views.SignUpView.as_view(), name="signup"),
+    path("activation/{user}/{token}/", views.AccountConfirmationView.as_view(), name="activation"),
+    path("activation/resend/", views.UserAccountResendConfirmationView.as_view(), name="activation_resend"),
+    path("password-reset/", views.PasswordResetView.as_view(), name="password_reset"),
+    path("password-reset/{user}/{token}/", views.PasswordResetConfirmationView.as_view(), name="password_reset_confirm"),
 ]
