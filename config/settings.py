@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # External Apps 
     'django_hosts',
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "djoser",
     "storages",
     "social_django",
