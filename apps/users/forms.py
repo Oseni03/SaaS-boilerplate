@@ -6,6 +6,7 @@ from django.contrib.auth.models import update_last_login
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError
 
+
 from hashid_field import rest
 from rest_framework import serializers
 
@@ -19,6 +20,28 @@ from . import notifications, models, tokens
 UPLOADED_AVATAR_SIZE_LIMIT = 1 * 1024 * 1024
 
 
+class UserLoginForm(forms.Form):
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={"autocorrect": "off", "autocapitalize": "off"}),
+    )
+    password = forms.CharField(required=True, widget=forms.PasswordInput())
+    
+    def save(self):
+        password = self.cleaned_data["password"]
+        email = self.cleaned_data["email"]
+        
+        user = authenticate(username=email, password=password)
+        if user is not None:
+            if user.is_active:
+                if user.otp_enabled and user.otp_verified:
+                    ## Send otp to user
+                    # return {"otp_auth_token": str(generate_otp_auth_token(self.user))} 
+                login(user)
+            return user 
+        return user
+
+
 class UserProfileForm(forms.ModelForm):
     id = rest.HashidSerializerCharField(source_field="users.User.id", source="user.id", read_only=True)
     email = forms.CharField(source="user.email", read_only=True)
@@ -26,7 +49,7 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ("id", "first_name", "last_name", "email", "avatar")
+        fields = ("first_name", "last_name", "email", "avatar")
 
     @staticmethod
     def clean_avatar(avatar):
@@ -99,14 +122,15 @@ class UserAccountConfirmationForm(forms.Form):
     )
     token = forms.CharField()
 
-    def validate(self):
-        token = self.cleaned_data["token"]
-        user = self.cleaned_data["user"]
+    def clean(self):
+        cleaned_data = super().clean()
+        token = cleaned_data["token"]
+        user = cleaned_data["user"]
 
         if not tokens.account_activation_token.check_token(user, token):
             raise exceptions.ValidationError(_("Malformed user account confirmation token"))
 
-        return self.cleaned_data
+        return cleaned_data
 
     def save(self, commit=True):
         user = cleaned_data.pop("user")
@@ -114,4 +138,97 @@ class UserAccountConfirmationForm(forms.Form):
         if commit:
             user.save()
         return user
+
+
+class UserAccountResendConfirmationForm(forms.Form):
+    email = forms.EmailField(help_text=_("User e-mail"))
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        user = None
+        email = cleaned_data["email"]
+        try:
+            user = dj_auth.get_user_model().objects.get(email=email)
+        except dj_auth.get_user_model().DoesNotExist:
+            pass
+        return {**cleaned_data, 'user': user}
         
+    def save(self, commit=True):
+        user = self.cleaned_data.pop('user')
+        
+        if user:
+        #     if jwt_api_settings.UPDATE_LAST_LOGIN:
+        #         update_last_login(None, user)
+            
+            notifications.AccountActivationEmail(
+                user=user, 
+                data={
+                    'user_id': user.id.hashid, 
+                    'token': tokens.password_reset_token.make_token(user)
+                }
+            ).send()
+        return user
+
+
+class UserAccountChangePasswordForm(forms.Form):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    old_password = forms.CharField(label="Old Password", widget=forms.PasswordInput(render_value=True))
+    new_password = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=True))
+    re_new_password = forms.CharField(label="Confirm New Password", widget=forms.PasswordInput(render_value=True))
+
+    def clean_new_password(self):
+        new_password = self.cleaned_data["new_password"]
+        password_validation.validate_password(new_password)
+        return new_password
+    
+    def clean_re_new_password(self):
+        new_password = self.cleaned_data["new_password"]
+        re_new_password = self.cleaned_data["re_new_password"]
+        if not new_password == re_new_password:
+            raise ValidationError({"re_new_password": _("Password not match!")}, 'not_match_password')
+        return re_new_password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        old_password = cleaned_data["old_password"]
+        new_password = cleaned_data["new_password"]
+        re_new_password = cleaned_data["re_new_password"]
+        
+        user = cleaned_data["user"]
+        if not user.check_password(old_password):
+            raise ValidationError({"old_password": _("Wrong old password")}, 'wrong_password')
+        return cleaned_data
+
+    def save(self, commit=True):
+        cleaned_data = self.cleaned_data
+        user = cleaned_data.pop("user")
+        new_password = cleaned_data.pop("new_password")
+        user.set_password(new_password)
+        if commit:
+            user.save()
+        return user
+
+
+class PasswordResetForm(forms.Form):
+    email = forms.EmailField(help_text=_("User e-mail"))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        user = None
+        try:
+            user = dj_auth.get_user_model().objects.get(email=cleaned_data["email"])
+        except dj_auth.get_user_model().DoesNotExist:
+            pass
+
+        return {**cleaned_data, 'user': user}
+
+    def save(self, commit=True):
+        user = self.cleaned_data.pop('user')
+        if user:
+            notifications.PasswordResetEmail(
+                user=user, 
+                data={
+                    'user_id': user.id.hashid, 
+                    'token': tokens.password_reset_token.make_token(user)}
+            ).send()
+        return user
