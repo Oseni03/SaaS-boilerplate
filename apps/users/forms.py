@@ -270,7 +270,7 @@ class PasswordResetConfirmationForm(forms.Form):
 class VerifyOTPForm(forms.Form):
     otp_token = forms.CharField()
 
-    def save(self):
+    def validate(self):
         otp_services.verify_otp(self.context_user, self.cleaned_data.get("otp_token", ""))
         return True
 

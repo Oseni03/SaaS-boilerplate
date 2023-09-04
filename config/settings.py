@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "social_django",
     "djstripe",
     "channels",
+    "widget_tweaks",
 ]
 
 MIDDLEWARE = [
@@ -178,9 +179,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 if DEVELOPMENT_MODE is True:
     STATIC_URL = 'static/'
-    STATIC_ROOT = BASE_DIR / "static"
+    # STATIC_ROOT = BASE_DIR / "static"
     MEDIA_URL = "media/"
     MEDIA_ROOT = BASE_DIR / "media"
+    STATICFILES_DIRS = [
+        BASE_DIR / "static",
+        BASE_DIR / "media"
+    ]
 else:
     AWS_S3_ACCESS_KEY_ID = getenv("AWS_S3_ACCESS_KEY_ID")
     AWS_S3_SECRET_ACCESS_KEY = getenv("AWS_S3_SECRET_ACCESS_KEY")

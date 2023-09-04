@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
 from django.views.generic import View
@@ -251,7 +252,7 @@ class GenerateOTP(LoginRequiredMixin, FormView):
             return self.form_invalid(form)
         
     def form_valid(self, form):
-        form.save()
+        form.validate()
         return super().form_valid()
 
 

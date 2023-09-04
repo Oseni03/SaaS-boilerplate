@@ -21,10 +21,10 @@ def context_user_required(cls):
     original_validate = cls.validate
 
     @wraps(original_validate)
-    def _validate(self, attrs):
+    def _validate(self):
         if not self.context_user:
             self.fail(no_user_error_key)
-        return original_validate(self, attrs)
+        return original_validate(self)
 
     cls.validate = _validate
 
