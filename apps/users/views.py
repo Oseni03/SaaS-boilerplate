@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
@@ -71,8 +72,10 @@ class LoginView(FormView):
                     login(self.request, user)
                     messages.info(self.request, "Login successful!")
             else:
-                messages.info(self.request, "Check your emial to activate your account!")
-        return super().form_valid()
+                messages.info(self.request, "Check your emaill to activate your account!")
+        else:
+            messages.info(self.request, "Invalid credentials")
+        return super().form_valid(form)
 
 
 class LogoutView(View):
@@ -86,7 +89,7 @@ class UserProfileView(LoginRequiredMixin, View):
         profile = UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
         context = {
             "profile": profile, 
-            "update_form": forms.UserProfileForm,
+            "profile_form": forms.UserProfileForm,
             "password_change_form": forms.UserAccountChangePasswordForm,
         }
         return render(request, "users/profile.html", context)
@@ -107,7 +110,7 @@ class UserProfileView(LoginRequiredMixin, View):
                 messages.success(self.request, "Profile update successful!")
             else:
                 for error in update_form.errors.values():
-                    messages.error(self.request, error)
+                    messages.info(self.request, error)
         
         context = {
             "profile": profile, 
@@ -122,7 +125,7 @@ class UserProfileView(LoginRequiredMixin, View):
                 messages.success(self.request, "Password change successful!")
             else:
                 for error in password_change_form.errors.values():
-                    messages.error(self.request, error)
+                    messages.info(self.request, error)
             context["password_change_form"] = password_change_form
         return render(request, "users/profile.html", context)
 
@@ -130,7 +133,7 @@ class UserProfileView(LoginRequiredMixin, View):
 class SignUpView(FormView):
     form_class = forms.UserSignupForm
     template_name = "users/signup.html" 
-    success_url = reverse_lazy("users:signup_confirm") 
+    success_url = reverse_lazy("users:profile") 
     
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -138,6 +141,8 @@ class SignUpView(FormView):
         if form.is_valid():
             return self.form_valid(form)
         else:
+            for error in form.errors.values():
+                messages.info(request, error) 
             return self.form_invalid(form)
         
     def form_valid(self, form):
@@ -150,16 +155,17 @@ class AccountConfirmationView(View):
         form = forms.UserAccountConfirmationForm(data={"user": user, "token": token})
         if form.is_valid():
             form.save()
-            return render(request, "users/login.html")
+            messages.success(request, "Account verification successful!")
+            return redirect(reverse('users:profile'))
         for error in form.errors.values():
-            messages.error(request, error)
-        return render(request, "users/signup_confirm.html")
+            messages.info(request, error)
+        return redirect(reverse('users:profile'))
 
 
 class UserAccountResendConfirmationView(FormView):
     form_class = forms.UserAccountResendConfirmationForm
     template_name = "users/confirmation_resend.html" 
-    success_url = reverse_lazy("users:signup_confirm") 
+    success_url = reverse_lazy("users:profile") 
     
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -168,7 +174,7 @@ class UserAccountResendConfirmationView(FormView):
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.error(request, error)
+                messages.info(request, error)
             return self.form_invalid(form)
         
     def form_valid(self, form):
@@ -188,7 +194,7 @@ class PasswordResetView(FormView):
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.error(request, error)
+                messages.info(request, error)
             return self.form_invalid(form)
         
     def form_valid(self, form):
@@ -212,7 +218,7 @@ class PasswordResetConfirmationView(View):
                 messages.success(request, "Password reset successful!")
                 return render(request, "users/login.html")
             for error in form.errors.values():
-                messages.error(request, error)
+                messages.info(request, error)
         return render(request, "users/password_reset_confirm.html", {"form": form})
 
 
@@ -248,7 +254,7 @@ class GenerateOTP(LoginRequiredMixin, FormView):
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.error(request, error)
+                messages.info(request, error)
             return self.form_invalid(form)
         
     def form_valid(self, form):
@@ -272,7 +278,7 @@ class ValidateOTP(FormView):
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.error(request, error)
+                messages.info(request, error)
             return self.form_invalid(form)
         
     def form_valid(self, form):

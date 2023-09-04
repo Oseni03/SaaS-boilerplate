@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container">
+    <div class="my-4">
+        <div id="user-info" class="mb-3">
+            <div class="row">
+                <div class="col-3">
+                    <img src="{{ user.avatar.url }}" class="img-thumbnail" alt="{{ profile }}">
+                </div>
+                <div class="col-9">
+                    <p><span class="fw-bold">Name:</span> {{ profile }}</p>
+                    <p><span class="fw-bold">Email:</span> {{ user.email }}</p>
+                    <p><span class="fw-bold">Roles:</span> {{ user.get_roles }}</p>
+                </div>
+            </div>
+        </div>
+        <div id="user-profile" class="mb-3">
+            <h4>Personal data</h4>
+            <p class="text-muted">Update your account details</p>
+            <br><hr><br>
+            <form action="" class="form-group">
+                {% csrf_token %}
+                <div class="row">
+                    {% for field in profile_form %}
+                    <div class="col-6">
+                        {% include "users/partials/_field.html" %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mb-4">
+                  <input type="submit" class="btn btn-dark btn-lg" value="Update personal data"  >
+                </div>
+            </form>
+        </div>
+        <div id="user-password-change" class="mb-3">
+            <h4>Change Password</h4>
+            <p class="text-muted">Update your password</p>
+            <br><hr><br>
+            <form action="" class="form-group">
+                {% csrf_token %}
+                <div class="row">
+                    {% for field in password_change_form %}
+                    <div class="col-6">
+                        {% include "users/partials/_field.html" %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mb-4">
+                  <input type="submit" class="btn btn-dark btn-lg" value="Change password"  >
+                </div>
+            </form>
+        </div>
+        <div id="user-2FA" class="mb-3">
+            <h4>Two-factor Authentication</h4>
+            <p class="text-muted">Enable 2FA on your account</p>
+            <br><hr><br>
+            {% if user.otp_enabled %}
+            <p>Your account is using two-factor authentication</p>
+            <a href="#" class="btn btn-dark">Disable 2FA</a>
+            {% else %}
+            <p>Your account is not using two-factor authentication</p>
+            <a href="#" class="btn btn-dark">Setup 2FA</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

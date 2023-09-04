@@ -25,8 +25,9 @@ class UserLoginForm(forms.Form):
     email = forms.EmailField(
         required=True,
         widget=forms.EmailInput(attrs={"autocorrect": "off", "autocapitalize": "off"}),
+        help_text=_("Write your email here...")
     )
-    password = forms.CharField(required=True, widget=forms.PasswordInput())
+    password = forms.CharField(required=True, widget=forms.PasswordInput(), help_text=_("Write your password here..."))
 
 
 class UserProfileForm(forms.ModelForm):
@@ -66,13 +67,21 @@ class UserProfileForm(forms.ModelForm):
 class UserSignupForm(forms.ModelForm):
     email = forms.EmailField(
         validators=[validators.EmailValidator()],
+        help_text=_("Write your email here...")
     )
-    password1 = forms.CharField(label="Password", widget=forms.PasswordInput(render_value=True))
-    password2 = forms.CharField(label="Confirm Password", widget=forms.PasswordInput(render_value=True))
+    password1 = forms.CharField(label="Password", widget=forms.PasswordInput(render_value=True), help_text=_("Minimum 8 characters..."))
+    password2 = forms.CharField(label="Confirm Password", widget=forms.PasswordInput(render_value=True), help_text=_("Rewrite password here..."))
 
     class Meta:
         model = dj_auth.get_user_model()
         fields = ("email", "password1", "password2",)
+
+    def clean_email(self):
+        email = self.cleaned_data["email"]
+        user = dj_auth.get_user_model().objects.filter(email=email)
+        if user.exists():
+            raise ValidationError(_("User with email already exist"))
+        return email
 
     def clean_password1(self):
         password = self.cleaned_data["password1"]
@@ -112,7 +121,7 @@ class UserAccountConfirmationForm(forms.Form):
         queryset=models.User.objects.all(),
         pk_field=rest.HashidSerializerCharField()
     )
-    token = forms.CharField()
+    token = forms.CharField(help_text=_("Write token here..."))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -132,7 +141,7 @@ class UserAccountConfirmationForm(forms.Form):
 
 
 class UserAccountResendConfirmationForm(forms.Form):
-    email = forms.EmailField(help_text=_("User e-mail"))
+    email = forms.EmailField(help_text=_("Write your email here..."))
     
     def clean(self):
         cleaned_data = super().clean()
@@ -163,9 +172,9 @@ class UserAccountResendConfirmationForm(forms.Form):
 
 class UserAccountChangePasswordForm(forms.Form):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    old_password = forms.CharField(label="Old Password", widget=forms.PasswordInput(render_value=True))
-    new_password = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=True))
-    re_new_password = forms.CharField(label="Confirm New Password", widget=forms.PasswordInput(render_value=True))
+    old_password = forms.CharField(label="Old Password", widget=forms.PasswordInput(render_value=True), help_text=_("Write your old password here..."))
+    new_password = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=True), help_text=_("Write your new password here..."))
+    re_new_password = forms.CharField(label="Confirm New Password", widget=forms.PasswordInput(render_value=True), help_text=_("Rewrite new password here..."))
 
     def clean_new_password(self):
         new_password = self.cleaned_data["new_password"]
@@ -268,7 +277,7 @@ class PasswordResetConfirmationForm(forms.Form):
 
 @context_user_required
 class VerifyOTPForm(forms.Form):
-    otp_token = forms.CharField()
+    otp_token = forms.CharField(help_text=_("Enter token here..."))
 
     def validate(self):
         otp_services.verify_otp(self.context_user, self.cleaned_data.get("otp_token", ""))
@@ -277,7 +286,7 @@ class VerifyOTPForm(forms.Form):
 
 class ValidateOTPForm(forms.Form):
     user_id = forms.CharField(widget=forms.HiddenInput())
-    otp_token = forms.CharField()
+    otp_token = forms.CharField(help_text=_("Enter token here..."))
     
     def clean(self):
         cleaned_data = super().clean()

@@ -2,9 +2,9 @@
 
 {% if messages %}
     {% for message in messages %}
-    <div id="messages" class="alert alert-{{ message.tags }} alert-dismissible fade show mt-5 pt-5" role="alert">
+    <div id="messages" class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3 d-flex align-items-center" role="alert">
       {{ message }} 
-      <button type="button mt-5" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endfor %}
 {% endif %}

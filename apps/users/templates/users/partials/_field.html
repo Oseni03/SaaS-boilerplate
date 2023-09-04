@@ -3,5 +3,5 @@
 
 <div class="mb-3">
   <label class="form-label">{{ field.label_tag }}</label>
-  {% render_field field class+="form-control" %}
+  {% render_field field class+="form-control" placeholder=field.help_text|safe %}
 </div>

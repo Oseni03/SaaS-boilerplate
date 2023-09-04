@@ -31,7 +31,7 @@
                     <a href="#" class="btn btn-light">Login with Google</a>
                 </div>
                 <h5 class="text-center mt-3">or</h5>
-                <form action="" class="form-group">
+                <form action="." method="post" class="form-group">
                     {% csrf_token %}
                     
                     {% for field in form %}
@@ -43,8 +43,8 @@
                       <input type="hidden" name="next" value="{{ next }}">
                     </div>
                     <div class="d-flex justify-content-between">
-                        <a href="#">Forgot Password?</a>
-                        <a href="#">Sign Up</a>
+                        <a href="{% url "users:password_reset" %}">Forgot Password?</a>
+                        <a href="{% url "users:signup" %}">Sign Up</a>
                     </div>
                 </form>
             </div>

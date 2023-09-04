@@ -2,6 +2,8 @@ from django.urls import path, re_path
 
 from . import views
 
+app_name = "users"
+
 urlpatterns = [
     re_path("^o/(?P<provider>\s+)/$", views.CustomProvideAuthView.as_view(), name="provider-auth"),
     path("login/", views.LoginView.as_view(), name="login"),

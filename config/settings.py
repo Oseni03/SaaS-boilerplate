@@ -212,6 +212,10 @@ HASHID_FIELD_SALT = getenv("HASHID_FIELD_SALT", get_random_secret_key())
 
 AUTH_USER_MODEL = "users.User"
 
+LOGIN_REDIRECT_URL = "/users/profile/"
+
+LOGIN_URL = "/users/login/"
+
 RATELIMIT_IP_META_KEY = "common.utils.get_client_ip"
 
 SUBSCRIPTION_TRIAL_PERIOD_DAYS = getenv("SUBSCRIPTION_TRIAL_PERIOD_DAYS", default=7)
