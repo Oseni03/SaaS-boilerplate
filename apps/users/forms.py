@@ -264,3 +264,31 @@ class PasswordResetConfirmationForm(forms.Form):
         if commit:
             user.save()
         return user
+
+
+@context_user_required
+class VerifyOTPForm(forms.Form):
+    otp_token = forms.CharField()
+
+    def save(self):
+        otp_services.verify_otp(self.context_user, self.cleaned_data.get("otp_token", ""))
+        return True
+
+
+class ValidateOTPForm(forms.Form):
+    user_id = forms.CharField(widget=forms.HiddenInput())
+    otp_token = forms.CharField()
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        try:
+            user = User.objects.get(id=cleaned_data["user_id"])
+        except:
+            pass 
+        return {"user": user, **cleaned_data}
+    
+    def validate(self):
+        user = self.cleaned_data["user"]
+        otp_token = self.cleaned_data["otp_token"]
+        
+        otp_services.validate_otp(user, otp_token)

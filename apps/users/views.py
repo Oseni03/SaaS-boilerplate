@@ -4,10 +4,12 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic.edit import FormView, UpdateView
+from django.views.generic.edit import FormView
 from django.views.generic import View
 
 from djoser.social.views import ProviderAuthView
+
+import qrcode
 
 from . import notifications, forms
 
@@ -103,7 +105,7 @@ class UserProfileView(LoginRequiredMixin, View):
                 update_form.update(profile)
                 messages.success(self.request, "Profile update successful!")
             else:
-                for error in update_form.errors:
+                for error in update_form.errors.values():
                     messages.error(self.request, error)
         
         context = {
@@ -118,7 +120,7 @@ class UserProfileView(LoginRequiredMixin, View):
                 password_change_form.save()
                 messages.success(self.request, "Password change successful!")
             else:
-                for error in password_change_form.errors:
+                for error in password_change_form.errors.values():
                     messages.error(self.request, error)
             context["password_change_form"] = password_change_form
         return render(request, "users/profile.html", context)
@@ -148,7 +150,7 @@ class AccountConfirmationView(View):
         if form.is_valid():
             form.save()
             return render(request, "users/login.html")
-        for error in form.errors:
+        for error in form.errors.values():
             messages.error(request, error)
         return render(request, "users/signup_confirm.html")
 
@@ -164,7 +166,7 @@ class UserAccountResendConfirmationView(FormView):
         if form.is_valid():
             return self.form_valid(form)
         else:
-            for error in form.errors:
+            for error in form.errors.values():
                 messages.error(request, error)
             return self.form_invalid(form)
         
@@ -184,7 +186,7 @@ class PasswordResetView(FormView):
         if form.is_valid():
             return self.form_valid(form)
         else:
-            for error in form.errors:
+            for error in form.errors.values():
                 messages.error(request, error)
             return self.form_invalid(form)
         
@@ -208,7 +210,77 @@ class PasswordResetConfirmationView(View):
                 form.save()
                 messages.success(request, "Password reset successful!")
                 return render(request, "users/login.html")
-            for error in form.errors:
+            for error in form.errors.values():
                 messages.error(request, error)
         return render(request, "users/password_reset_confirm.html", {"form": form})
+
+
+def get_qrcode_path(hashid):
+    path = settings.BASE_DIR / "static" / "img" / "qrcode" / f"{hashid}.png"
+    return path
+
+
+class GenerateOTP(LoginRequiredMixin, FormView):
+    """
+    Enabling two-factor authentication with authentication app
+    """
+    
+    form_class = forms.VerifyOTPForm
+    template_name = "users/generate_otp.html" 
+    success_url = reverse_lazy("users:profile") 
+    
+    def get_context_data(self, request, *args, **kwargs):
+        context = super().get_context_data(request, *args, **kwargs)
         
+        otp_base32, otp_auth_url = otp_services.generate_otp(request.user)
+        qrcode_img_path = get_qrcode_path(request.user.id.hashid)
+        qrcode.make(otp_auth_url).save(qrcode_img_path)
+        
+        context["qrcode_img_path"] = qrcode_img_path
+        context["otp_auth_url"] = otp_auth_url
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            for error in form.errors.values():
+                messages.error(request, error)
+            return self.form_invalid(form)
+        
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid()
+
+
+class ValidateOTP(FormView):
+    """
+    Enabling two-factor authentication with authentication app
+    """
+    
+    form_class = forms.ValidateOTPForm
+    template_name = "users/validate_otp.html" 
+    success_url = reverse_lazy("users:profile") 
+    
+    def post(self, request, *args, **kwargs):
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            for error in form.errors.values():
+                messages.error(request, error)
+            return self.form_invalid(form)
+        
+    def form_valid(self, form):
+        form.validate()
+        return super().form_valid()
+
+
+@login_required
+def disableOTP(request):
+    otp_services.disable_otp(request.user)
+    messages.info(request, "OTP authentication disabled successfully!")
+    return redirect(reverse("users:profile"))

@@ -11,6 +11,11 @@ class UserEmail(emails.Email):
         super().__init__(to=user.email, data=data)
 
 
+class OTPGenerateMail(UserEmail):
+    name = 'OTP_GENERATE_MAIL'
+    serializer_class = email_serializers.OTPGenerateSerializer
+
+
 class OTPAuthMail(UserEmail):
     """
     To call:

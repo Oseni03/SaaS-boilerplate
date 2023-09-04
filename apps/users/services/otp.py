@@ -17,6 +17,8 @@ def generate_otp(user: User) -> Tuple[str, str]:
     user.otp_base32 = otp_base32
     user.save()
     
+    # otp_services.generate_otp(user)
+    
     return otp_base32, otp_auth_url
 
 
@@ -37,6 +39,7 @@ def validate_otp(user: User, otp_token: str):
     totp = pyotp.TOTP(user.otp_base32)
     if not totp.verify(otp_token, valid_window=1):
         raise OTPVerificationFailure(OTPErrors.VERIFICATION_TOKEN_INVALID.value)
+    return True
 
 
 def disable_otp(user: User):
@@ -44,5 +47,5 @@ def disable_otp(user: User):
     user.otp_verified = False
     user.otp_base32 = ""
     user.otp_auth_url = ""
-
+    
     user.save()

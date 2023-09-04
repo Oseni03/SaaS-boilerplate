@@ -267,8 +267,8 @@ REST_FRAMEWORK = {
 }
 
 
-OTP_AUTH_ISSUER_NAME = getenv("OTP_AUTH_ISSUER_NAME", default="")
-OTP_AUTH_TOKEN_COOKIE = 'otp_auth_token'
+OTP_AUTH_ISSUER_NAME = SITE_NAME
+OTP_AUTH_TOKEN_COOKIE = 'otp_token'
 OTP_AUTH_TOKEN_LIFETIME_MINUTES = datetime.timedelta(minutes=getenv('OTP_AUTH_TOKEN_LIFETIME_MINUTES', default=5))
 OTP_VALIDATE_PATH = "/auth/validate-otp"
 
