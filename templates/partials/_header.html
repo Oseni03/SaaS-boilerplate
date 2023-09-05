@@ -25,6 +25,11 @@
         <li class="nav-item">
           <a class="nav-link" href="#">Notifications</a>
         </li>
+        {% if not user.is_confirmed %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url "users:activation_resend" %}">Confirm account</a>
+        </li>
+        {% endif %}
         <li class="nav-item">
           <a class="nav-link" href="{% url "users:profile" %}">Profile</a>
         </li>

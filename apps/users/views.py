@@ -197,6 +197,7 @@ class UserAccountResendConfirmationView(FormView):
         
     def form_valid(self, form):
         form.save()
+        messages.info(self.request, "Account confirmation link sent to your email")
         return super().form_valid()
     
 
