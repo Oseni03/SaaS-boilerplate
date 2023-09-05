@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <div class="my-4">
-        <div id="user-info" class="mb-3">
+        <div id="user-info" class="mb-4">
             <div class="row">
                 <div class="col-3">
                     <img src="{{ user.avatar.url }}" class="img-thumbnail" alt="{{ profile }}">
@@ -17,11 +17,11 @@
                 </div>
             </div>
         </div>
-        <div id="user-profile" class="mb-3">
+        <div id="user-profile" class="mb-4">
             <h4>Personal data</h4>
             <p class="text-muted">Update your account details</p>
-            <br><hr><br>
-            <form action="" class="form-group">
+            <hr>
+            <form action="." class="form-group" method="post">
                 {% csrf_token %}
                 <div class="row">
                     {% for field in profile_form %}
@@ -31,15 +31,15 @@
                     {% endfor %}
                 </div>
                 <div class="mb-4">
-                  <input type="submit" class="btn btn-dark btn-lg" value="Update personal data"  >
+                  <input type="submit" class="btn btn-dark" value="Update personal data"  >
                 </div>
             </form>
         </div>
-        <div id="user-password-change" class="mb-3">
+        <div id="user-password-change" class="mb-4">
             <h4>Change Password</h4>
             <p class="text-muted">Update your password</p>
-            <br><hr><br>
-            <form action="" class="form-group">
+            <hr>
+            <form action="." class="form-group" method="post">
                 {% csrf_token %}
                 <div class="row">
                     {% for field in password_change_form %}
@@ -49,14 +49,14 @@
                     {% endfor %}
                 </div>
                 <div class="mb-4">
-                  <input type="submit" class="btn btn-dark btn-lg" value="Change password"  >
+                  <input type="submit" class="btn btn-dark" value="Change password"  >
                 </div>
             </form>
         </div>
-        <div id="user-2FA" class="mb-3">
+        <div id="user-2FA" class="mb-4">
             <h4>Two-factor Authentication</h4>
             <p class="text-muted">Enable 2FA on your account</p>
-            <br><hr><br>
+            <hr>
             {% if user.otp_enabled %}
             <p>Your account is using two-factor authentication</p>
             <a href="#" class="btn btn-dark">Disable 2FA</a>

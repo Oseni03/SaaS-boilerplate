@@ -39,7 +39,7 @@ class UserProfileForm(forms.ModelForm):
         fields = ("first_name", "last_name", "avatar")
 
     @staticmethod
-    def clean_avatar(avatar):
+    def validate_avatar(avatar):
         if avatar and avatar.size > UPLOADED_AVATAR_SIZE_LIMIT:
             raise ValidationError({"avatar": _("Too large file")}, 'too_large')
         return avatar
@@ -50,6 +50,8 @@ class UserProfileForm(forms.ModelForm):
 
     def update(self, user):
         avatar = self.cleaned_data.pop("avatar", None)
+        first_name = self.cleaned_data.pop("first_name", None)
+        last_name = self.cleaned_data.pop("last_name", None)
         # email = self.cleaned_data.pop("email")
         if avatar:
             if not user.avatar:
@@ -61,7 +63,10 @@ class UserProfileForm(forms.ModelForm):
         #         user.user = User()
         #     user.user.email = email
         #     user.user.save()
-        return super().update(user)
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+        return user
 
 
 class UserSignupForm(forms.ModelForm):

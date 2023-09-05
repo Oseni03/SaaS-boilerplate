@@ -78,7 +78,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def get_roles(self):
         from .services.users import get_role_names
-        return get_role_names(self.user)
+        return get_role_names(self)
     
     def get_customer(self):
         customer = djstripe.models.Customer.filter(subscriber=self)

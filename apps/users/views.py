@@ -1,9 +1,10 @@
 from django.conf import settings
+from django.shortcuts import render
 from django.contrib.auth import get_user_model
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import logout
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
@@ -13,7 +14,7 @@ from djoser.social.views import ProviderAuthView
 
 import qrcode
 
-from . import notifications, forms
+from . import notifications, forms, models
 
 class CustomProvideAuthView(ProviderAuthView):
     def post(self, request, *args, **kwargs):
@@ -86,7 +87,7 @@ class LogoutView(View):
 
 class UserProfileView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        profile = UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
+        profile = models.UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
         context = {
             "profile": profile, 
             "profile_form": forms.UserProfileForm,
@@ -95,7 +96,7 @@ class UserProfileView(LoginRequiredMixin, View):
         return render(request, "users/profile.html", context)
     
     def post(self, request, *args, **kwargs):
-        profile = UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
+        profile = models.UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
         profile_data = {
             "first_name": profile.first_name,
             "last_name": profile.last_name,
@@ -106,11 +107,13 @@ class UserProfileView(LoginRequiredMixin, View):
         update_form = forms.UserProfileForm(request.POST, initial=profile_data)
         if update_form.has_changed():
             if update_form.is_valid():
+                avatar = update_form.cleaned_data["avatar"]
+                update_form.validate_avatar(avatar)
                 update_form.update(profile)
-                messages.success(self.request, "Profile update successful!")
+                messages.success(request, "Profile update successful!")
             else:
                 for error in update_form.errors.values():
-                    messages.info(self.request, error)
+                    messages.info(request, error)
         
         context = {
             "profile": profile, 
@@ -118,14 +121,14 @@ class UserProfileView(LoginRequiredMixin, View):
             "password_change_form": forms.UserAccountChangePasswordForm,
         }
         
-        if request.POST.get("new_password") != "":
+        if request.POST.get("new_password") :
             password_change_form = forms.UserAccountChangePasswordForm(request.POST)
             if password_change_form.is_valid():
                 password_change_form.save()
-                messages.success(self.request, "Password change successful!")
+                messages.success(request, "Password change successful!")
             else:
                 for error in password_change_form.errors.values():
-                    messages.info(self.request, error)
+                    messages.info(request, error)
             context["password_change_form"] = password_change_form
         return render(request, "users/profile.html", context)
 
