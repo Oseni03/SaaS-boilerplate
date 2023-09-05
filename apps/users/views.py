@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
 from django.urls import reverse_lazy
 from django.contrib import messages
@@ -14,7 +14,7 @@ from djoser.social.views import ProviderAuthView
 
 import qrcode
 
-from . import notifications, forms, models
+from . import notifications, forms, models, tokens, jwt
 
 class CustomProvideAuthView(ProviderAuthView):
     def post(self, request, *args, **kwargs):
@@ -50,6 +50,11 @@ class LoginView(FormView):
     template_name = "users/login.html" 
     success_url = reverse_lazy("users:profile") 
     
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect("users:profile")
+        return super().dispatch(request, *args, **kwargs)
+    
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
         form = self.get_form(form_class)
@@ -79,7 +84,7 @@ class LoginView(FormView):
         return super().form_valid(form)
 
 
-class LogoutView(View):
+class LogoutView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         logout(request)
         return render(request, "users/login.html")
@@ -90,8 +95,13 @@ class UserProfileView(LoginRequiredMixin, View):
         profile = models.UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
         context = {
             "profile": profile, 
-            "profile_form": forms.UserProfileForm,
-            "password_change_form": forms.UserAccountChangePasswordForm,
+            "profile_form": forms.UserProfileForm(initial={
+                "first_name": profile.first_name,
+                "last_name": profile.last_name,
+                # "email": request.user.email,
+                "avatar": profile.avatar,
+            }),
+            "password_change_form": forms.UserAccountChangePasswordForm(request.user),
         }
         return render(request, "users/profile.html", context)
     
@@ -118,11 +128,11 @@ class UserProfileView(LoginRequiredMixin, View):
         context = {
             "profile": profile, 
             "update_form": update_form,
-            "password_change_form": forms.UserAccountChangePasswordForm,
+            "password_change_form": forms.UserAccountChangePasswordForm(request.user),
         }
         
-        if request.POST.get("new_password") :
-            password_change_form = forms.UserAccountChangePasswordForm(request.POST)
+        if request.POST.get("new_password1") :
+            password_change_form = forms.UserAccountChangePasswordForm(user=request.user, data=request.POST)
             if password_change_form.is_valid():
                 password_change_form.save()
                 messages.success(request, "Password change successful!")
@@ -137,6 +147,11 @@ class SignUpView(FormView):
     form_class = forms.UserSignupForm
     template_name = "users/signup.html" 
     success_url = reverse_lazy("users:profile") 
+    
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect("users:profile")
+        return super().dispatch(request, *args, **kwargs)
     
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -208,18 +223,18 @@ class PasswordResetView(FormView):
 class PasswordResetConfirmationView(View):
     
     def post(self, request, user, token, *args, **kwargs):
-        initial = {
-            "user": user,
-            "token": token,
-            "new_password": "",
-            "re_new_password": "",
-        }
-        form = forms.PasswordResetConfirmationForm(request.POST, initial=initial)
+        user = get_object_or_404(models.User, id=user)
+        
+        if not tokens.password_reset_token.check_token(user, token):
+            messages.error(request, "Malformed password reset token")
+            return redirect("users:password_reset")
+        form = forms.PasswordResetConfirmationForm(user, request.POST)
         if form.has_changed():
             if form.is_valid():
                 form.save()
+                jwt.blacklist_user_tokens(user)
                 messages.success(request, "Password reset successful!")
-                return render(request, "users/login.html")
+                return redirect("users:login")
             for error in form.errors.values():
                 messages.info(request, error)
         return render(request, "users/password_reset_confirm.html", {"form": form})

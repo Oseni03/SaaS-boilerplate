@@ -6,6 +6,7 @@ from django.contrib.auth import password_validation, get_user_model
 from django.contrib.auth.models import update_last_login
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError
+from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 
 
 from hashid_field import rest
@@ -134,7 +135,7 @@ class UserAccountConfirmationForm(forms.Form):
         user = cleaned_data["user"]
 
         if not tokens.account_activation_token.check_token(user, token):
-            raise exceptions.ValidationError(_("Malformed user account confirmation token"))
+            raise ValidationError(_("Malformed user account confirmation token"))
         return cleaned_data
 
     def save(self, commit=True):
@@ -175,43 +176,8 @@ class UserAccountResendConfirmationForm(forms.Form):
         return user
 
 
-class UserAccountChangePasswordForm(forms.Form):
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    old_password = forms.CharField(label="Old Password", widget=forms.PasswordInput(render_value=True), help_text=_("Write your old password here..."))
-    new_password = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=True), help_text=_("Write your new password here..."))
-    re_new_password = forms.CharField(label="Confirm New Password", widget=forms.PasswordInput(render_value=True), help_text=_("Rewrite new password here..."))
-
-    def clean_new_password(self):
-        new_password = self.cleaned_data["new_password"]
-        password_validation.validate_password(new_password)
-        return new_password
-    
-    def clean_re_new_password(self):
-        new_password = self.cleaned_data["new_password"]
-        re_new_password = self.cleaned_data["re_new_password"]
-        if not new_password == re_new_password:
-            raise ValidationError({"re_new_password": _("Password not match!")}, 'not_match_password')
-        return re_new_password
-
-    def clean(self):
-        cleaned_data = super().clean()
-        old_password = cleaned_data["old_password"]
-        new_password = cleaned_data["new_password"]
-        re_new_password = cleaned_data["re_new_password"]
-        
-        user = cleaned_data["user"]
-        if not user.check_password(old_password):
-            raise ValidationError({"old_password": _("Wrong old password")}, 'wrong_password')
-        return cleaned_data
-
-    def save(self, commit=True):
-        cleaned_data = self.cleaned_data
-        user = cleaned_data.pop("user")
-        new_password = cleaned_data.pop("new_password")
-        user.set_password(new_password)
-        if commit:
-            user.save()
-        return user
+class UserAccountChangePasswordForm(PasswordChangeForm):
+    new_password1 = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=False), help_text=_("Minimum of 8 characters..."))
 
 
 class PasswordResetForm(forms.Form):
@@ -239,46 +205,9 @@ class PasswordResetForm(forms.Form):
         return user
 
 
-class PasswordResetConfirmationForm(forms.Form):
-    # user field is a CharField by design to hide the information whether the user exists or not
-    user = forms.CharField(widget=forms.HiddenInput())
-    new_password = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=True))
-    re_new_password = forms.CharField(label="Confirm New Password", widget=forms.PasswordInput(render_value=True))
-    token = forms.CharField(widget=forms.HiddenInput())
+class PasswordResetConfirmationForm(SetPasswordForm):
+    new_password1 = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=False), help_text=_("Minimum of 8 characters..."))
     
-    def clean_new_password(self):
-        new_password = self.cleaned_data["new_password"]
-        password_validation.validate_password(new_password)
-        return new_password
-
-    def clean(self):
-        attrs = super().clean()
-        token = attrs["token"]
-        user_id = attrs["user"]
-        new_password = attrs["new_password"]
-        re_new_password = attrs["re_new_password"]
-        
-        try:
-            user = models.User.objects.get(pk=user_id)
-        except models.User.DoesNotExist:
-            raise exceptions.ValidationError(_("Malformed password reset token"), 'invalid_token')
-        
-        if not tokens.password_reset_token.check_token(user, token):
-            raise exceptions.ValidationError(_("Malformed password reset token"), 'invalid_token')
-        
-        if not new_password == re_new_password:
-            raise exceptions.ValidationError({"re_new_password": _("Password not match!")}, 'not_match_password')
-        return {**attrs, 'user': user}
-
-    def save(self, commit=True):
-        user = self.cleaned_data.pop("user")
-        new_password = self.cleaned_data.pop("new_password")
-        user.set_password(new_password)
-        jwt.blacklist_user_tokens(user)
-        if commit:
-            user.save()
-        return user
-
 
 @context_user_required
 class VerifyOTPForm(forms.Form):
