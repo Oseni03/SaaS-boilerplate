@@ -13,5 +13,6 @@ urlpatterns = [
     path("activation/{user}/{token}/", views.AccountConfirmationView.as_view(), name="activation"),
     path("activation/resend/", views.UserAccountResendConfirmationView.as_view(), name="activation_resend"),
     path("password-reset/", views.PasswordResetView.as_view(), name="password_reset"),
-    path("password-reset/{user}/{token}/", views.PasswordResetConfirmationView.as_view(), name="password_reset_confirm"),
+    # path("password-reset/{user}/{token}/", views.PasswordResetConfirmationView.as_view(), name="password_reset_confirm"),
+    path("password-reset/{user}/{token}/", views.password_reset_confirm, name="password_reset_confirm"),
 ]

@@ -14,6 +14,7 @@ class OTPGenerateSerializer(serializers.Serializer):
 class AccountActivationEmailSerializer(serializers.Serializer):
     user_id = serializers.CharField()
     token = serializers.CharField()
+    domain = serializers.CharField()
 
 
 class PasswordResetEmailSerializer(serializers.Serializer):

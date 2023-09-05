@@ -7,6 +7,7 @@ from django.contrib.auth.models import update_last_login
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
+from django.template.loader import render_to_string
 
 
 from hashid_field import rest
@@ -113,12 +114,24 @@ class UserSignupForm(forms.ModelForm):
         if commit:
             user.save()
         
-        notifications.AccountActivationEmail(
-            user=user, 
-            data={
-                'user_id': user.id.hashid, 
-                'token': tokens.account_activation_token.make_token(user)}
-        ).send()
+        data={
+            "domain": settings.DOMAIN,
+            "site_name": settings.SITE_NAME,
+            'user_id': user.id.hashid, 
+            'token': tokens.account_activation_token.make_token(user)
+        }
+        if settings.DEVELOPMENT_MODE:
+            subject = "Activate your Account"
+            message = render_to_string(
+                "users/emails/account_confirmation.html",
+                data
+            )
+            user.email_user(subject, message)
+        else:
+            notifications.AccountActivationEmail(
+                user=user, 
+                data=data
+            ).send()
         return user
 
 
@@ -147,7 +160,10 @@ class UserAccountConfirmationForm(forms.Form):
 
 
 class UserAccountResendConfirmationForm(forms.Form):
-    email = forms.EmailField(help_text=_("Write your email here..."))
+    email = forms.EmailField(
+        validators=[validators.EmailValidator()],
+        help_text=_("Write your email here...")
+    )
     
     def clean(self):
         cleaned_data = super().clean()
@@ -165,14 +181,24 @@ class UserAccountResendConfirmationForm(forms.Form):
         if user:
         #     if jwt_api_settings.UPDATE_LAST_LOGIN:
         #         update_last_login(None, user)
-            
-            notifications.AccountActivationEmail(
-                user=user, 
-                data={
-                    'user_id': user.id.hashid, 
-                    'token': tokens.account_activation_token.make_token(user)
-                }
-            ).send()
+            data={
+                "domain": settings.DOMAIN,
+                "site_name": settings.SITE_NAME,
+                'user_id': user.id.hashid, 
+                'token': tokens.account_activation_token.make_token(user)
+            }
+            if settings.DEVELOPMENT_MODE:
+                subject = "Activate your Account"
+                message = render_to_string(
+                    "users/emails/account_confirmation.html",
+                    data
+                )
+                user.email_user(subject, message)
+            else:
+                notifications.AccountActivationEmail(
+                    user=user, 
+                    data=data
+                ).send()
         return user
 
 
@@ -181,7 +207,10 @@ class UserAccountChangePasswordForm(PasswordChangeForm):
 
 
 class PasswordResetForm(forms.Form):
-    email = forms.EmailField(help_text=_("User e-mail"))
+    email = forms.EmailField(
+        validators=[validators.EmailValidator()],
+        help_text=_("User e-mail...")
+    )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -196,12 +225,24 @@ class PasswordResetForm(forms.Form):
     def save(self, commit=True):
         user = self.cleaned_data.pop('user')
         if user:
-            notifications.PasswordResetEmail(
-                user=user, 
-                data={
-                    'user_id': user.id.hashid, 
-                    'token': tokens.password_reset_token.make_token(user)}
-            ).send()
+            data={
+                "domain": settings.DOMAIN,
+                "site_name": settings.SITE_NAME,
+                'user_id': user.id.hashid, 
+                'token': tokens.password_reset_token.make_token(user)
+            }
+            if settings.DEVELOPMENT_MODE:
+                subject = "Activate your Account"
+                message = render_to_string(
+                    "users/emails/password_reset.html",
+                    data
+                )
+                user.email_user(subject, message)
+            else:
+                notifications.PasswordResetEmail(
+                    user=user, 
+                    data=data
+                ).send()
         return user
 
 

@@ -209,6 +209,7 @@ class PasswordResetView(FormView):
         form_class = self.get_form_class()
         form = self.get_form(form_class)
         if form.is_valid():
+            messages.info(request, "Email has been sent your email with instructions to reset your password")
             return self.form_valid(form)
         else:
             for error in form.errors.values():
@@ -218,6 +219,25 @@ class PasswordResetView(FormView):
     def form_valid(self, form):
         form.save()
         return super().form_valid()
+
+
+def password_reset_confirm(request, user, token):
+    user = get_object_or_404(models.User, id=user)
+    
+    if not tokens.password_reset_token.check_token(user, token):
+        messages.error(request, "Malformed password reset token")
+        return redirect("users:password_reset")
+    if request.method == "POST":
+        form = forms.PasswordResetConfirmationForm(user, request.POST)
+        if form.is_valid():
+            form.save()
+            jwt.blacklist_user_tokens(user)
+            messages.success(request, "Password reset successful!")
+            return redirect("users:login")
+        for error in form.errors.values():
+            messages.info(request, error)
+    form = forms.PasswordResetConfirmationForm(user)
+    return render(request, "users/password_reset_confirm.html", {"form": form})
 
 
 class PasswordResetConfirmationView(View):

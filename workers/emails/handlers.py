@@ -17,36 +17,30 @@ def send_email(event, context):
     detail = event.get("Detail")
     
     to = detail.get("to")
-    if detail_type == "OTP_AUTH_MAIL":
-        body_html = render_to_string(
-            "emails/otp_authentication.html",
-            detail
-        )
-        subject = ""
     elif detail_type == "SUBSCRIPTION_ERROR":
         body_html = render_to_string(
             "emails/subscription_error.html",
             detail
         )
-        subject = ""
+        subject = "Subscription Error"
     elif detail_type == "ACCOUNT_ACTIVATION":
         body_html = render_to_string(
-            "emails/account_activation.html",
+            "users/emails/account_confirmation.html",
             detail
         )
-        subject = ""
+        subject = "Account Confirmation"
     elif detail_type == "PASSWORD_RESET":
         body_html = render_to_string(
-            "emails/password_reset.html",
+            "users/emails/password_reset.html",
             detail
         )
-        subject = ""
+        subject = "Password Reset"
     elif detail_type == "TRIAL_EXPIRES_SOON":
         body_html = render_to_string(
-            "emails/trial_expiring.html",
+            "finances/emails/trial_expiring.html",
             detail
         )
-        subject = ""
+        subject = "Trial expires soon!"
     
     email_message = {
         'Body': {
