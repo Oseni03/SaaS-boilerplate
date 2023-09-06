@@ -12,7 +12,7 @@ class UserNotification(websockets.Websocket):
         super().__init__(channel=channel, data=data)
     
     def get_channel(self, user):
-        return "notifications{}".format(user.id.hash)
+        return "notifications"
 
 
 class SendUserNotification(UserNotification):

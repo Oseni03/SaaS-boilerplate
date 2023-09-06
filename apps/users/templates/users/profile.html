@@ -59,10 +59,10 @@
             <hr>
             {% if user.otp_enabled %}
             <p>Your account is using two-factor authentication</p>
-            <a href="#" class="btn btn-dark">Disable 2FA</a>
+            <a href="{% url "users:disable_OTP" %}" class="btn btn-dark">Disable 2FA</a>
             {% else %}
             <p>Your account is not using two-factor authentication</p>
-            <a href="#" class="btn btn-dark">Setup 2FA</a>
+            <a href="{% url "users:generate_OTP" %}" class="btn btn-dark">Setup 2FA</a>
             {% endif %}
         </div>
     </div>

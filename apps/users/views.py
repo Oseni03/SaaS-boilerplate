@@ -15,6 +15,7 @@ from djoser.social.views import ProviderAuthView
 import qrcode
 
 from . import notifications, forms, models, tokens, jwt
+from .services import otp as otp_services
 
 class CustomProvideAuthView(ProviderAuthView):
     def post(self, request, *args, **kwargs):
@@ -263,7 +264,7 @@ class PasswordResetConfirmationView(View):
 
 def get_qrcode_path(hashid):
     path = settings.BASE_DIR / "static" / "img" / "qrcode" / f"{hashid}.png"
-    return path
+    return path, f"img/qrcode/{hashid}.png"
 
 
 class GenerateOTP(LoginRequiredMixin, FormView):
@@ -275,14 +276,15 @@ class GenerateOTP(LoginRequiredMixin, FormView):
     template_name = "users/generate_otp.html" 
     success_url = reverse_lazy("users:profile") 
     
-    def get_context_data(self, request, *args, **kwargs):
-        context = super().get_context_data(request, *args, **kwargs)
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
         
-        otp_base32, otp_auth_url = otp_services.generate_otp(request.user)
-        qrcode_img_path = get_qrcode_path(request.user.id.hashid)
+        otp_base32, otp_auth_url = otp_services.generate_otp(self.request.user)
+        qrcode_img_path, img_name = get_qrcode_path(self.request.user.id.hashid)
+        print(otp_auth_url)
         qrcode.make(otp_auth_url).save(qrcode_img_path)
         
-        context["qrcode_img_path"] = qrcode_img_path
+        context["img_name"] = img_name
         context["otp_auth_url"] = otp_auth_url
         return context
     

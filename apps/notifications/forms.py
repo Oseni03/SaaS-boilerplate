@@ -4,7 +4,7 @@ from . import models
 
 
 class UpdateNotificationForm(forms.ModelForm):
-
+    
     def update(self, instance: models.Notification):
         is_read = cleaned_data["is_read"]
         if is_read != instance.is_read:

@@ -265,6 +265,7 @@ class ValidateOTPForm(forms.Form):
     
     def clean(self):
         cleaned_data = super().clean()
+        user =  None
         try:
             user = User.objects.get(id=cleaned_data["user_id"])
         except:
