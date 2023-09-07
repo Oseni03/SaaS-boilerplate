@@ -1,13 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block extra_js %}
-<script src="https://js.stripe.com/v3/"></script>
-<script src="{% static "js/card.js" %}"></script>
-<script>
-    card("{{ STRIPE_PUBLISHABLE_KEY }}", "{{ user.email }}")
-</script>
-{% endblock %}
 
 {% block content %}
 <div class="m-auto">
@@ -15,14 +8,38 @@
         <div class="col">
             <div class="container">
                 
-                <div class="h2 text-center my-4">Password Reset</div>
+                <div class="h2 text-center my-4">Enter card details</div>
                 <form action="." method="post" id="payment-form">
                     {% csrf_token %}
-                    <div id="card-element">
-                        <!-- Element with create card elements here-->
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.name.label_tag }}</label>
+                        {% render_field form.name class+="form-control focus-ring focus-ring-dark" placeholder=form.name.help_text|safe %}
                     </div>
                     
-                    <div id="card-errors" role="alert"></div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.number.label_tag }}</label>
+                        {% render_field form.number class+="form-control focus-ring focus-ring-dark" placeholder=form.number.help_text|safe %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">{{ form.brand.label_tag }}</label>
+                            {% render_field form.brand class+="form-control focus-ring focus-ring-dark" placeholder=form.brand.help_text|safe %}
+                        </div>
+                        <div class="col">
+                            <label class="form-label">{{ form.cvc.label_tag }}</label>
+                            {% render_field form.cvc class+="form-control focus-ring focus-ring-dark" placeholder=form.cvc.help_text|safe %}
+                        </div>
+                        <div class="col">
+                            <label class="form-label">{{ form.exp_month.label_tag }}</label>
+                            {% render_field form.exp_month class+="form-control focus-ring focus-ring-dark" placeholder=form.exp_month.help_text|safe %}
+                        </div>
+                        <div class="col">
+                            <label class="form-label">{{ form.exp_year.label_tag }}</label>
+                            {% render_field form.exp_year class+="form-control focus-ring focus-ring-dark" placeholder=form.exp_year.help_text|safe %}
+                        </div>
+                    </div>
                     
                     <input type="hidden" name="payment_intent_id" value="{{ payment_intent_id }}">
                     <div class="d-grid mb-3">

@@ -2,16 +2,25 @@ import pytz
 from django.conf import settings
 from django.contrib import messages
 from django.utils import timezone
+from django.core import validators
 from django.utils.translation import gettext as _
 from djstripe import models as djstripe_models, enums as djstripe_enums
-from drf_yasg.utils import swagger_serializer_method
 from django import forms, exceptions
 
 from . import models, constants, utils
 from .services import subscriptions, customers
 
 
-class PaymentIntentForm(forms.ModelForms):
+class CardForm(forms.Form):
+    number = forms.CharField(label="Card number")
+    name = forms.CharField(label="Card holder's name")
+    brand = form.ChoiceField(queryset=djstripe_enums.CardBrand, label="Card brand.", empty_label="Card brand")
+    cvc = forms.CharField(label="cvc")
+    exp_month = forms.IntegerField(label="Expiry month", validators=[validators.MaxLengthValidator(2)])
+    exp_year = forms.IntegerField(label="Expiry year", validators=[validators.MaxLengthValidator(4)])
+
+
+class PaymentIntentForm(forms.ModelForm):
     """**IMPORTANT:** Update this serializer with real products and prices created in Stripe"""
 
     price = forms.ModelChoiceField(queryset=models.Price.objects.all(), empty_label=None)
@@ -39,19 +48,7 @@ class PaymentIntentForm(forms.ModelForms):
         return djstripe_models.PaymentIntent.sync_from_stripe_data(payment_intent_response)
 
 
-class SetupIntentForm(forms.Forms):
-
-    def save(self, user):
-        (customer, _) = djstripe_models.Customer.get_or_create(user)
-        setup_intent_response = djstripe_models.SetupIntent._api_create(
-            customer=customer.id, 
-            payment_method_types=['card'], 
-            usage='off_session'
-        )
-        return djstripe_models.SetupIntent.sync_from_stripe_data(setup_intent_response)
-
-
-class PaymentMethodForm(forms.ModelForms):
+class PaymentMethodForm(forms.ModelForm):
     card = forms.JSONField()
     
     class Meta:
@@ -59,33 +56,21 @@ class PaymentMethodForm(forms.ModelForms):
         fields = ('type', 'card')
 
 
-class UpdateDefaultPaymentMethodForm(forms.Form):
-    def update(self, instance, validated_data):
-        customer, _ = djstripe_models.Customer.get_or_create(self.context['request'].user)
-        customers.set_default_payment_method(customer=customer, payment_method=instance)
-        return instance
-
-
-class SubscriptionItemProductForm(forms.ModelForms):
+class ProductForm(forms.ModelForm):
     class Meta:
         model = models.Product
         fields = ('id', 'name')
 
 
-class PriceForm(forms.ModelForms):
-    product = SubscriptionItemProductForm()
+class PriceForm(forms.ModelForm):
+    product = ProductForm()
 
     class Meta:
         model = djstripe_models.Price
         fields = ('id', 'product', 'unit_amount')
 
 
-class StripeTimestampField(forms.DateTimeField):
-    def to_representation(self, value):
-        return super().to_representation(timezone.datetime.fromtimestamp(value, tz=pytz.UTC))
-
-
-class CancelUserActiveSubscriptionForm(forms.ModelForms):
+class CancelUserActiveSubscriptionForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if subscriptions.is_current_schedule_phase_plan(schedule=self.instance, plan_config=constants.FREE_PLAN):

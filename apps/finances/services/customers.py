@@ -1,20 +1,23 @@
 from typing import Union
+from django.conf import settings
 
 from djstripe import models as djstripe_models
 
 
 def set_default_payment_method(
-    customer: djstripe_models.Customer, payment_method: Union[djstripe_models.PaymentMethod, str]
+    user: settings.AUTH_USER_MODEL, payment_method: Union[djstripe_models.PaymentMethod, str]
 ):
     """
     Customer's default payment method should be set on the invoice_settings field. The
     default_payment_method on the customer model is only a convenience for easier filtering; it
     is populated in the dj-stripe webhook.
 
-    :param customer:
+    :param user:
     :param payment_method:
     :return:
     """
+    (customer, _) = djstripe_models.Customer.get_or_create(user)
+    
     if isinstance(payment_method, djstripe_models.StripeModel):
         payment_method = payment_method.id
 
@@ -48,3 +51,13 @@ def remove_payment_method(payment_method: djstripe_models.PaymentMethod):
             set_default_payment_method(customer, next_default_pm)
 
     payment_method.detach()
+
+
+def setup_intent(user: setting.AUTH_USER_MODEL):
+    (customer, _) = djstripe_models.Customer.get_or_create(user)
+    setup_intent_response = djstripe_models.SetupIntent._api_create(
+        customer=customer.id, 
+        payment_method_types=['card'], 
+        usage='off_session'
+    )
+    return djstripe_models.SetupIntent.sync_from_stripe_data(setup_intent_response)

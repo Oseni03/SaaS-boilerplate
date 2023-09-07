@@ -2,6 +2,8 @@ from django.urls import path, include
 
 from . import views
 
+app_name = "finances"
+
 stripe_urls = [
     path("", include("djstripe.urls", namespace="djstripe")),
 ]
