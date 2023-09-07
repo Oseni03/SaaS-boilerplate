@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_js %}
+<script src="https://js.stripe.com/v3/"></script>
+<script src="{% static "js/card.js" %}"></script>
+<script>
+    card("{{ STRIPE_PUBLISHABLE_KEY }}", "{{ user.email }}")
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="m-auto">
+    <div class="row">
+        <div class="col">
+            <div class="container">
+                
+                <div class="h2 text-center my-4">Password Reset</div>
+                <form action="" method="post" id="payment-form">
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

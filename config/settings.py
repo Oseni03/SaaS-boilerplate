@@ -286,11 +286,13 @@ RATELIMIT_IP_META_KEY = "common.utils.get_client_ip"
 
 
 STRIPE_TEST_PUBLIC_KEY = getenv("STRIPE_TEST_PUBLIC_KEY")
+STRIPE_PUBLISHABLE_KEY = getenv("STRIPE_PUBLISHABLE_KEY")
 STRIPE_LIVE_MODE = getenv("STRIPE_LIVE_MODE", "True") == "True"
 DJSTRIPE_WEBHOOK_SECRET = getenv("DJSTRIPE_WEBHOOK_SECRET")  # We don't use this, but it must be set
 DJSTRIPE_USE_NATIVE_JSONFIELD = False
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
-DJSTRIPE_WEBHOOK_VALIDATION='retrieve_event' # "verify_signature"
+DJSTRIPE_WEBHOOK_VALIDATION="verify_signature" # retrieve_event
+# DJSTRIPE_SUBSCRIBER_MODEL = "users.Profile"
 STRIPE_CHECKS_ENABLED = getenv("STRIPE_CHECKS_ENABLED", default=True)
 if not STRIPE_CHECKS_ENABLED:
     SILENCED_SYSTEM_CHECKS.append("djstripe.C001")

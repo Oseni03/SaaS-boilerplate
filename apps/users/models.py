@@ -129,3 +129,11 @@ class UserProfile(models.Model):
 
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def email(self):
+        """Get the profile user email
+        
+        This is needed by dj-stripe
+        """
+        return self.user.email
