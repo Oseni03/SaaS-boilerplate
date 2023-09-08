@@ -18,6 +18,7 @@ class CardForm(forms.Form):
     cvc = forms.CharField(label="cvc")
     exp_month = forms.IntegerField(label="Expiry month", validators=[validators.MaxLengthValidator(2)])
     exp_year = forms.IntegerField(label="Expiry year", validators=[validators.MaxLengthValidator(4)])
+    auto = forms.BooleanField(label="Automatic renewal", required=False)
 
 
 class PaymentIntentForm(forms.ModelForm):

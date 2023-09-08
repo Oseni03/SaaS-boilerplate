@@ -41,7 +41,13 @@
                         </div>
                     </div>
                     
+                    <div class="form-check">
+                      {% render_field form.auto class+="form-check-input focus-ring focus-ring-dark" placeholder=form.number.help_text|safe checked %}
+                      <label class="form-check-label" for="flexCheckChecked">{{ form.auto.label_tag }}</label>
+                    </div>
+                    
                     <input type="hidden" name="payment_intent_id" value="{{ payment_intent_id }}">
+                    <input type="hidden" name="price_id" value="{{ price.id }}">
                     <div class="d-grid mb-3">
                         <input id="submit-button" type="submit" class="btn btn-dark" value="Pay"  >
                     </div>

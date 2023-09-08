@@ -7,7 +7,7 @@ from django.views.generic import View
 from django.views.generic import TemplateView
 from djstripe import models as djstripe_models
 
-
+from .services import customers
 from .models import Price, Product
 
 class PricingView(TemplateView):
@@ -32,15 +32,22 @@ def PricingPaymentMethod(LoginRequiredMixin, View):
         intent.save(request.user)
         context["payment_intent_id"] = intent.id
         context["form"] = forms.CardForm()
+        context["price"] = price
         return render(request, "finances/card.html", context)
     
-    def post(self, request, *args, **kwargs):
+    def post(self, request, price_id, *args, **kwargs):
         payment_intent_id = request.POST.get("payment_intent_id")
         payment_intent = djstripe_models.PaymentIntent.objects.get(id=payment_intent_id)
+        if not price_id:
+            price_id = request.POST.get("price_id")
         
         form = CardForm(request.POST)
         if form.is_valid():
             cleaned_data = form.cleaned_data
+            (customer, _) = djstripe_models.Customer.get_or_create(request.user)
+            
+            price = djstripe_models.Price.objects.get(id=price_id)
+            
             card = {
                 "number": cleaned_data["number"],
                 "exp_month": cleaned_data["exp_month"],
@@ -50,14 +57,6 @@ def PricingPaymentMethod(LoginRequiredMixin, View):
                 "brand": cleaned_data["brand"],
             }
             try:
-                card_token = djstripe_models.create_token(
-                    cleaned_data["number"],
-                    cleaned_data["exp_month"],
-                    cleaned_data["exp_year"],
-                    cleaned_data["cvc"],
-                    name=cleaned_data["name"],
-                    brand=cleaned_data["brand"],
-                )
                 
                 payment_method = forms.PaymentMethodForm(data={
                     "type": "card",
@@ -68,9 +67,23 @@ def PricingPaymentMethod(LoginRequiredMixin, View):
                 })
                 payment_method.save()
                 
-                payment_intent.update({
-                    "payment_method": payment_method
-                })
+                if cleaned_data["auto"]:
+                    customers.set_default_payment_method(request.user, payment_method)
+                    
+                    subscription_schedule = services.create_schedule(user=request.user, price=price)
+                    
+                    # subscription = stripe.Subscription.create(
+                    #     customer=customer.id,
+                    #     items=[{
+                    #         'price': price_id,
+                    #     }],
+                    # )
+                    payment_intent.update(
+                        payment_method=payment_method, 
+                        customer=customer
+                    )
+                else:
+                    payment_intent.update(payment_method=payment_method)
                 
                 payment_intent._api_confirm(payment_method=payment_method)
                 djstripe_models.PaymentIntent.sync_from_stripe_data(payment_intent)
