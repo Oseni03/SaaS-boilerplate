@@ -2,6 +2,7 @@ import datetime
 import logging
 
 from django.utils import timezone
+from django.conf import settings
 from djstripe import webhooks, models as djstripe_models
 
 from . import constants, notifications, models
@@ -19,8 +20,9 @@ def activate_free_plan_on_subscription_deletion(event: djstripe_models.Event):
     :param event:
     :return:
     """
-    free_plan_price = models.Price.objects.get_by_plan(constants.FREE_PLAN)
-    subscriptions.create_schedule(customer=event.customer, price=free_plan_price)
+    if settings.ENABLE_SUBSCRIPTION and settings.HAS_TRIAL_PERIOD_OR_FREE:
+        free_plan_price = models.Price.objects.all().order_by("unit_amount").first()
+        subscriptions.create_schedule(customer=event.customer, price=free_plan_price)
 
 
 @webhooks.handler('subscription_schedule.released')

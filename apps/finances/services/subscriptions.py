@@ -14,7 +14,7 @@ def initialize_user(user):
     :param user:
     :return:
     """
-    price = models.Price.objects.get_by_plan(constants.FREE_PLAN)
+    price = models.Price.objects.all().order_by("unit_amount").first()
     create_schedule(user=user, price=price)
 
 
