@@ -1,6 +1,6 @@
 import pytz
 from django.utils import timezone
-from djstripe import models as djstripe_models, enums as djstripe_enums
+from djstripe import models as djstripe_models, enums as djstripe_enums, sync as djstripe_sync
 
 from .. import models, constants
 from ..exceptions import UserOrCustomerNotDefined, SubscriptionAndPriceDefinedTogether, SubscriptionOrPriceNotDefined
@@ -54,7 +54,10 @@ def create_schedule(
 
     if subscription_schedule_stripe_instance is None:
         raise SubscriptionOrPriceNotDefined("Either subscription or price must be defined")
-
+    if user:
+        djstripe_sync.sync_subscriber(user)
+    else: 
+        djstripe_sync.sync_subscriber(customer.subscriber)
     return djstripe_models.SubscriptionSchedule.sync_from_stripe_data(subscription_schedule_stripe_instance)
 
 

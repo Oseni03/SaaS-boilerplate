@@ -4,6 +4,8 @@ from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.models import Group
 from django.db import models
 
+from datetime import date
+
 from common.acl.helpers import CommonGroups
 from common.models import ImageWithThumbnailMixin
 from common.storages import UniqueFilePathGenerator, PublicS3Boto3StorageWithCDN
@@ -56,6 +58,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     
+    paid_until = models.DateField(nill=True)
+    
     otp_enabled = models.BooleanField(default=False)
     otp_verified = models.BooleanField(default=False)
     otp_base32 = models.CharField(max_length=255, blank=True, default='')
@@ -79,6 +83,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_roles(self):
         from .services.users import get_role_names
         return get_role_names(self)
+    
+    def set_paid_until(self, date_or_timestamp):
+        if isinstance(date_or_timestamp, int):
+            paid_until = date.fromtimestamp(date_or_timestamp)
+        elif isinstance(date_or_timestamp, str):
+            paid_until = date.fromtimestamp(int(date_or_timestamp))
+        else:
+            paid_until = date_or_timestamp
+        
+        self.paid_until = paid_until
+        self.save()
     
     def get_customer(self):
         customer = djstripe.models.Customer.filter(subscriber=self)

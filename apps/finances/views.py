@@ -21,7 +21,7 @@ class PricingView(TemplateView):
         return context 
 
 
-def PricingPaymentMethod(LoginRequiredMixin, View):
+def PricingPayment(LoginRequiredMixin, View):
     
     def get(self, request, price_id, *args, **kwargs):
         price = get_object_or_404(Price, id=price_id)
@@ -32,7 +32,6 @@ def PricingPaymentMethod(LoginRequiredMixin, View):
         intent.save(request.user)
         context["payment_intent_id"] = intent.id
         context["form"] = forms.CardForm()
-        context["price"] = price
         return render(request, "finances/card.html", context)
     
     def post(self, request, price_id, *args, **kwargs):
@@ -57,35 +56,45 @@ def PricingPaymentMethod(LoginRequiredMixin, View):
                 "brand": cleaned_data["brand"],
             }
             try:
-                
-                payment_method = forms.PaymentMethodForm(data={
+                stripe_pm = djstripe_models.PaymentMethod._api_create(
                     "type": "card",
                     "card": card,
                     "billing_details": {
                         "email": request.user.email,
-                    }
-                })
-                payment_method.save()
+                )
+                payment_method = djstripe_models.PaymentMethod.sync_from_stripe_data(stripe_pm)
                 
                 if cleaned_data["auto"]:
                     customers.set_default_payment_method(request.user, payment_method)
                     
                     subscription_schedule = services.create_schedule(user=request.user, price=price)
                     
-                    # subscription = stripe.Subscription.create(
+                    # stripe_subcr = djstripe_models.Subscription._api_create(
                     #     customer=customer.id,
                     #     items=[{
                     #         'price': price_id,
                     #     }],
                     # )
-                    payment_intent.update(
-                        payment_method=payment_method, 
-                        customer=customer
-                    )
+                    # subscr = djstripe_models.Subscription.sync_from_stripe_data(stripe_subcr)
+                    
+                    subscr = djstripe_models.Subscription.filter(schedule=subscription_schedule).order_by("-created").first()
+                    
+                    latest_invoice = djstripe_models.Invoice.get(subscr.latest_invoice)
+                    
+                    payment_intent = djstripe_models.PaymentIntent.objects.get(id=latest_invoice.id)
                 else:
                     payment_intent.update(payment_method=payment_method)
                 
-                payment_intent._api_confirm(payment_method=payment_method)
+                ret = payment_intent._api_confirm(payment_method=payment_method)
+                if ret.status == "requires_action":
+                    context = {}
+                    context["client_secret"] = payment_intent.client_secret
+                    context["STRIPE_PUBLISHABLE_SECRET"] = settings.STRIPE_PUBLISHABLE_SECRET
+                    
+                    djstripe_models.PaymentIntent.sync_from_stripe_data(payment_intent)
+                    
+                    return render(request, "finances/3dsec.html", context)
+                
                 djstripe_models.PaymentIntent.sync_from_stripe_data(payment_intent)
                 return render(request, "finances/subscription.html")
             except Exception as e:

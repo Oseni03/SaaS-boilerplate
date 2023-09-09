@@ -106,3 +106,15 @@ def charge_refund_updated(event: djstripe_models.Event):
     if failure_reason := refund_data.get("failure_reason", ""):
         refund = djstripe_models.Refund.objects.get(id=refund_data.get("id"))
         charges.fail_charge_refund(refund=refund, reason=failure_reason)
+
+
+@webhooks.handler('charge.succeeded')
+def charge_succeed_update(event: djstripe_models.Event):
+    """
+    On successful charge, set paid until
+
+    :param event:
+    :return:
+    """
+    data = event.data['object']
+    charges.set_paid_until(data)
