@@ -5,7 +5,7 @@
 <script src="https://www.stripe.com/v3/"></script>
 <script src="{% static "finances/js/3dsec.js" %}"></script>
 <script>
-    _3dsec("{{ STRIPE_PUBLISHABLE_KEY }}", "{{ CLIENT_SECRET }}")
+    _3dsec("{{ STRIPE_PUBLISHABLE_KEY }}", "{{ client_secret }}")
 </script>
 {% endblock %}
 

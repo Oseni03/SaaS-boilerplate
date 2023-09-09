@@ -30,15 +30,13 @@ class PaymentIntentForm(forms.ModelForm):
         model = djstripe_models.PaymentIntent
         fields = ('price',)
 
-    def save(self, user, commit=True):
-        (customer, _) = djstripe_models.Customer.get_or_create(user)
+    def save(self, commit=True):
         price = self.cleaned_data["price"]
         
         payment_intent_response = djstripe_models.PaymentIntent._api_create(
             amount=price.unit_amount,
             currency="usd",
-            customer=customer.id,
-            payment_method_types=["card"]
+            payment_method_types=["card"],
             setup_future_usage="off_session",
         )
         return djstripe_models.PaymentIntent.sync_from_stripe_data(payment_intent_response)
