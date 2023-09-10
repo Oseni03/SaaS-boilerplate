@@ -11,5 +11,5 @@ stripe_urls = [
 urlpatterns = [
     path("stripe/", include(stripe_urls)),
     path("pricing/", views.PricingView.as_view(), name="pricing"),
-    path("pricing/<int:price_id>/", views.PricingPayment.as_view(), name="pricing_payment"),
+    path("pricing/<int:price_id>/payment/", views.PricingPayment.as_view(), name="pricing_payment"),
 ]

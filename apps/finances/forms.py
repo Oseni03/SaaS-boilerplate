@@ -11,16 +11,6 @@ from . import models, constants, utils
 from .services import subscriptions, customers
 
 
-class CardForm(forms.Form):
-    number = forms.CharField(label="Card number")
-    name = forms.CharField(label="Card holder's name")
-    brand = form.ChoiceField(queryset=djstripe_enums.CardBrand, label="Card brand.", empty_label="Card brand")
-    cvc = forms.CharField(label="cvc")
-    exp_month = forms.IntegerField(label="Expiry month", validators=[validators.MaxLengthValidator(2)])
-    exp_year = forms.IntegerField(label="Expiry year", validators=[validators.MaxLengthValidator(4)])
-    auto = forms.BooleanField(label="Automatic renewal", required=False)
-
-
 class PaymentIntentForm(forms.ModelForm):
     """**IMPORTANT:** Update this serializer with real products and prices created in Stripe"""
 

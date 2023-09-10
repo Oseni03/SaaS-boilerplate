@@ -1,6 +1,8 @@
 from django.conf import settings
+from django.urls import reverse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import View
@@ -28,69 +30,35 @@ def PricingPayment(LoginRequiredMixin, View):
         context = {
             "price": price
         }
-        intent.save(request.user)
-        context["form"] = forms.CardForm()
-        return render(request, "finances/card.html", context)
+        context["STRIPE_PUBLISHABLE_KEY"] = settings.STRIPE_PUBLISHABLE_KEY
+        context["redirect_url"] = reverse("finances:profile_subscription")
+        return render(request, "finances/subscription_payment.html", context)
     
-    def post(self, request, price_id, *args, **kwargs):
-        if not price_id:
-            price_id = request.POST.get("price_id")
+    def post(self, request, price_id=None, *args, **kwargs):
+        data = json.loads(request.data)
+        (customer, _) = djstripe_models.Customer.get_or_create(request.user)
         
-        form = CardForm(request.POST)
-        if form.is_valid():
-            cleaned_data = form.cleaned_data
+        try:
+            subscription = customer.subscribe(
+                price=price_id,
+                payment_behavior='default_incomplete',
+                payment_settings={'save_default_payment_method': 'on_subscription'},
+                expand=['latest_invoice.payment_intent', 'pending_setup_intent'],
+            )
             
-            price = Price.objects.get(id=price_id)
+            djstripe_models.Subscription.sync_from_stripe_data(subscription)
             
-            card = {
-                "number": cleaned_data["number"],
-                "exp_month": cleaned_data["exp_month"],
-                "exp_year": cleaned_data["exp_year"],
-                "cvc": cleaned_data["cvc"],
-                "name": cleaned_data["name"],
-                "brand": cleaned_data["brand"],
-            }
-            try:
-                stripe_pm = djstripe_models.PaymentMethod._api_create(
-                    "type": "card",
-                    "card": card,
-                    "billing_details": {
-                        "email": request.user.email,
-                )
-                payment_method = djstripe_models.PaymentMethod.sync_from_stripe_data(stripe_pm)
-                
-                if cleaned_data["auto"]:
-                    (customer, _) = djstripe_models.Customer.get_or_create(request.user)
-                    customers.set_default_payment_method(request.user, payment_method)
-                    
-                    subscr = customer.subscribe(price=price)
-                    
-                    latest_invoice = djstripe_models.Invoice.get(subscr.latest_invoice)
-                    
-                    payment_intent = djstripe_models.PaymentIntent.objects.get(id=latest_invoice.payment_intent)
-                    payment_intent.update(payment_method=payment_method.id, customer=customer.id)
-                else:
-                    
-                    payment_intent = PaymentIntentForm(data={"price": price})
-                    payment_intent.save()
-                
-                ret = payment_intent._api_confirm(payment_method=payment_method)
-                if ret.status == "requires_action":
-                    context = {}
-                    context["client_secret"] = payment_intent.client_secret
-                    context["STRIPE_PUBLISHABLE_KEY"] = settings.STRIPE_PUBLISHABLE_KEY
-                    
-                    djstripe_models.PaymentIntent.sync_from_stripe_data(payment_intent)
-                    
-                    return render(request, "finances/3dsec.html", context)
-                
-                djstripe_models.PaymentIntent.sync_from_stripe_data(payment_intent)
-                return render(request, "finances/subscribe.html")
-            except Exception as e:
-                messages.info(request, e)
-        else:
-            for error in form.errors.values():
-                messages.info(request, error)
-        
-        context["form"] = form
-        return render(request, "finances/card.html", context)
+            if subscription.pending_setup_intent is not None:
+                return JsonResponse({
+                    "type": 'setup', 
+                    "clientSecret": subscription.pending_setup_intent.client_secret
+                })
+            else:
+                return JsonResponse({
+                    "type": 'payment', 
+                    "clientSecret": subscription.latest_invoice.payment_intent.client_secret
+                })
+        except Exception as e:
+            return JsonResponse({"error": {'message': e.user_message}}, status=400)
+
+ 

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    
+<!-- Display stripe error messages here -->
+    <div id="messages" class="alert alert-info alert-dismissible fade show mt-3 d-flex align-items-center" role="alert">
+      <div id="stripe-error_msg"></div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</div>
+
+<div class="m-auto">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                
+                <div class="h2 text-center my-4">Subscribe</div>
+                
+                <form method="post" class="form-group" id="payment-form">
+                    {% csrf_token %}
+                    
+                    <div id="payment-element">
+                        <!-- Elements will create form elements here -->
+                    </div>
+                    
+                    <div class="d-grid mb-4">
+                      <input id="submit_btn" type="submit" class="btn btn-dark" value="Make payment"  >
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

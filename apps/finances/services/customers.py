@@ -53,7 +53,7 @@ def remove_payment_method(payment_method: djstripe_models.PaymentMethod):
     payment_method.detach()
 
 
-def setup_intent(user: setting.AUTH_USER_MODEL):
+def setup_intent(user: settings.AUTH_USER_MODEL):
     (customer, _) = djstripe_models.Customer.get_or_create(user)
     setup_intent_response = djstripe_models.SetupIntent._api_create(
         customer=customer.id, 

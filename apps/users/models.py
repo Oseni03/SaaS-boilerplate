@@ -58,7 +58,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     
-    paid_until = models.DateField(nill=True)
+    paid_until = models.DateField(null=True)
     
     otp_enabled = models.BooleanField(default=False)
     otp_verified = models.BooleanField(default=False)
