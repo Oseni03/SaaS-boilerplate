@@ -94,6 +94,18 @@ def send_email_trial_expires_soon(event: djstripe_models.Event):
     notifications.TrialExpiresSoonEmail(customer=event.customer, data={'expiry_date': expiry_date}).send()
 
 
+@webhooks.handler('customer.subscription')
+def grant_access_to_subscribed_user(event: djstripe_models.Event):
+    """
+    Verify the subscription status. If it’s active then your user has paid for your product.
+    Check the product the customer subscribed to and grant access to your service.
+    Store the product.id, subscription.id and subscription.status in your database along with the customer.id you already saved. Check this record when determining which features to enable for the user in your application.
+    """
+    customer = djstripe_models.Customer.get(id=event.customer)
+    customer._sync_subscriptions()
+    customer._sync_invoices()
+
+
 @webhooks.handler('charge.refund.updated')
 def charge_refund_updated(event: djstripe_models.Event):
     """

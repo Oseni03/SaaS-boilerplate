@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -166,19 +168,18 @@ class SignUpView(FormView):
         
     def form_valid(self, form):
         form.save()
-        return super().form_valid()
+        return super().form_valid(form)
 
 
-class AccountConfirmationView(View):
-    def post(self, request, user, token, *args, **kwargs):
-        form = forms.UserAccountConfirmationForm(data={"user": user, "token": token})
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Account verification successful!")
-            return redirect(reverse('users:profile'))
-        for error in form.errors.values():
-            messages.info(request, error)
+def account_confirmation(request, user, token):
+    form = forms.UserAccountConfirmationForm(data={"user": user, "token": token})
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Account verification successful!")
         return redirect(reverse('users:profile'))
+    for error in form.errors.values():
+        messages.info(request, error)
+    return redirect(reverse('users:activation_resend'))
 
 
 class UserAccountResendConfirmationView(FormView):
@@ -199,7 +200,7 @@ class UserAccountResendConfirmationView(FormView):
     def form_valid(self, form):
         form.save()
         messages.info(self.request, "Account confirmation link sent to your email")
-        return super().form_valid()
+        return super().form_valid(form)
     
 
 class PasswordResetView(FormView):
@@ -211,16 +212,17 @@ class PasswordResetView(FormView):
         form_class = self.get_form_class()
         form = self.get_form(form_class)
         if form.is_valid():
-            messages.info(request, "Email has been sent your email with instructions to reset your password")
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.info(request, error)
+                messages.info(request, error) 
             return self.form_invalid(form)
-        
+            
+    
     def form_valid(self, form):
         form.save()
-        return super().form_valid()
+        messages.info(request, "Email has been sent your email with instructions to reset your password")
+        return super().form_valid(form)
 
 
 def password_reset_confirm(request, user, token):
@@ -300,7 +302,7 @@ class GenerateOTP(LoginRequiredMixin, FormView):
         
     def form_valid(self, form):
         form.validate()
-        return super().form_valid()
+        return super().form_valid(form)
 
 
 class ValidateOTP(FormView):
@@ -324,7 +326,7 @@ class ValidateOTP(FormView):
         
     def form_valid(self, form):
         form.validate()
-        return super().form_valid()
+        return super().form_valid(form)
 
 
 @login_required

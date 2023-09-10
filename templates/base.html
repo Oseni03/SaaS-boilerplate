@@ -8,6 +8,10 @@
     <title>Backend Boilerplate</title>
     <link href="{% static "css/main.min.css" %}" rel="stylesheet">    
     <link href="{% static "css/offcanvas-navbar.css" %}" rel="stylesheet">
+    
+    {% block extra_css %}
+    {% endblock %}
+    
     {% block extra_js %}
     {% endblock %}
 </head>

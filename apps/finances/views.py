@@ -10,23 +10,22 @@ from django.views.generic import TemplateView
 from djstripe import models as djstripe_models
 
 from .services import customers
-from .models import Price, Product
 
 class PricingView(TemplateView):
     template_name = "finances/pricing.html"
     
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        prices = Price.objects.prefetch_related("product").all()
+        prices = djstripe_models.Price.objects.prefetch_related("product").all()
         context["monthly"] = prices.filter(recurring__interval="month")
         context["yearly"] = prices.filter(recurring__interval="year")
         return context 
 
 
-def PricingPayment(LoginRequiredMixin, View):
+class PricingPayment(LoginRequiredMixin, View):
     
     def get(self, request, price_id, *args, **kwargs):
-        price = get_object_or_404(Price, id=price_id)
+        price = get_object_or_404(djstripe_models.Price, id=price_id)
         context = {
             "price": price
         }
@@ -61,4 +60,6 @@ def PricingPayment(LoginRequiredMixin, View):
         except Exception as e:
             return JsonResponse({"error": {'message': e.user_message}}, status=400)
 
- 
+
+class SubscriptionPage(TemplateView):
+    template_name = "finances/profile_subscription.html"

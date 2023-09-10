@@ -12,7 +12,7 @@ from common.storages import UniqueFilePathGenerator, PublicS3Boto3StorageWithCDN
 
 # from . import notifications
 
-import djstripe
+from djstripe import models as djstripe_models
 
 
 class UserManager(BaseUserManager):
@@ -95,25 +95,21 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.paid_until = paid_until
         self.save()
     
-    def get_customer(self):
-        customer = djstripe.models.Customer.filter(subscriber=self)
+    @property
+    def customer(self):
+        customer = djstripe_models.Customer.filter(subscriber=self)
         if customer.exists():
             return customer.first()
+        # customer.active_subscriptions
+        # customer.subscriptions
+        # customer.has_any_active_subscription()
+        # customer.valid_subscriptions
+        # customer.is_subscribed_to(product)
         return None
     
     @property
-    def subscription(self):
-        customer = self.get_customer()
-        if customer:
-            return customer.subscription
-        return None
-    
-    @property
-    def is_subscriped(self):
-        customer = self.get_customer()
-        if customer:
-            return customer.has_any_active_subscription()
-        return False
+    def is_subscribed(self):
+        return self.customer.has_any_active_subscription()
 
 
 class UserAvatar(ImageWithThumbnailMixin, models.Model):

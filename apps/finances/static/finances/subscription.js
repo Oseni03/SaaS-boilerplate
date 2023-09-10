@@ -74,6 +74,43 @@ function makeSubscription(stripe_publishable_key, price_amount, price_id, redire
             // site first to authorize the payment, then redirected to the `return_url`.
             
             // If 3D security is not handle, should retrieve the payment intent clientSecret then pass it to stripe.confirmCardPayment(client_secret)
+            
+            // Retrieve the PaymentIntent
+            stripe.retrievePaymentIntent(clientSecret).then(({paymentIntent}) => {
+              const message = document.querySelector('#message')
+            
+              // Inspect the PaymentIntent `status` to indicate the status of the payment
+              // to your customer.
+              //
+              // Some payment methods will [immediately succeed or fail][0] upon
+              // confirmation, while others will first enter a `processing` state.
+              //
+              // [0]: https://stripe.com/docs/payments/payment-methods#payment-notification
+              switch (paymentIntent.status) {
+            
+                case 'processing':
+                  handleError({message: "Payment processing. We'll update you when payment is received."});
+                  break;
+            
+                case 'requires_payment_method':
+                  handleError({message: "Payment failed. Please try another payment method."});
+                  // Redirect your user back to your payment page to attempt collecting
+                  // payment again
+                  break;
+            
+                case 'requires_action':
+                    stripe.confirmCardPayment(clientSecret).then(function(result) {
+                        if (result.error) {
+                            handleError(result.error);
+                            break
+                        }
+                    });
+        
+                default:
+                  handleError({message: "Something went wrong."});
+                  break;
+              }
+            });
           }
         });
         

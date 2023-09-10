@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block extra_js %}
+<script src="https://www.stripe.js"></script>
+<script src="{% static "finances/subscription.js" %}"></script>
+<script>
+    makeSubscription("{{ STRIPE_PUBLISHABLE_KEY }}", "{{ price.unit_amount }}", "{{ price.id }}", "{{ redirect_url }}")
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     

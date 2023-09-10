@@ -1,6 +1,7 @@
 from django import forms 
 from django.conf import settings
 from django.core import validators
+from django.shortcuts import get_object_or_404
 from django.contrib import auth as dj_auth
 from django.contrib.auth import password_validation, get_user_model
 from django.contrib.auth.models import update_last_login
@@ -8,10 +9,8 @@ from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.template.loader import render_to_string
+from django.core.mail import send_mail
 
-
-from hashid_field import rest
-from rest_framework import serializers
 
 from common.decorators import context_user_required
 
@@ -96,9 +95,10 @@ class UserSignupForm(forms.ModelForm):
         return password
     
     def clean_password2(self):
-        password = self.cleaned_data["password1"]
-        password2 = self.cleaned_data["password2"]
-        if password and password2 and password != password2:
+        # Check that the two password entries match
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
             raise ValidationError("Passwords don't match")
         return password2
 
@@ -126,7 +126,7 @@ class UserSignupForm(forms.ModelForm):
                 "users/emails/account_confirmation.html",
                 data
             )
-            user.email_user(subject, message)
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
         else:
             notifications.AccountActivationEmail(
                 user=user, 
@@ -136,23 +136,21 @@ class UserSignupForm(forms.ModelForm):
 
 
 class UserAccountConfirmationForm(forms.Form):
-    user = serializers.PrimaryKeyRelatedField(
-        queryset=models.User.objects.all(),
-        pk_field=rest.HashidSerializerCharField()
-    )
-    token = forms.CharField(help_text=_("Write token here..."))
+    user = forms.CharField()
+    token = forms.CharField()
 
     def clean(self):
         cleaned_data = super().clean()
         token = cleaned_data["token"]
-        user = cleaned_data["user"]
+        user_hash = cleaned_data["user"]
+        user = get_object_or_404(User, id=user_hash)
 
         if not tokens.account_activation_token.check_token(user, token):
             raise ValidationError(_("Malformed user account confirmation token"))
-        return cleaned_data
+        return {"user": user, "token": token}
 
     def save(self, commit=True):
-        user = cleaned_data.pop("user")
+        user = self.cleaned_data.pop("user")
         user.is_confirmed = True
         if commit:
             user.save()
@@ -193,7 +191,7 @@ class UserAccountResendConfirmationForm(forms.Form):
                     "users/emails/account_confirmation.html",
                     data
                 )
-                user.email_user(subject, message)
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
             else:
                 notifications.AccountActivationEmail(
                     user=user, 
@@ -237,7 +235,7 @@ class PasswordResetForm(forms.Form):
                     "users/emails/password_reset.html",
                     data
                 )
-                user.email_user(subject, message)
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
             else:
                 notifications.PasswordResetEmail(
                     user=user, 
