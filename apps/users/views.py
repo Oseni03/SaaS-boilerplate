@@ -88,7 +88,7 @@ class LoginView(FormView):
 
 
 class LogoutView(LoginRequiredMixin, View):
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         logout(request)
         return render(request, "users/login.html")
 
@@ -107,7 +107,7 @@ class UserProfileView(LoginRequiredMixin, View):
             "profile_form": forms.UserProfileForm(initial=profile_data),
             "password_change_form": forms.UserAccountChangePasswordForm(request.user),
         }
-        if settings.ENABLE_SUBSCRIPTION:
+        if settings.SUBSCRIPTION_ENABLE:
             context["subscription"] = True
         else:
             context["subscription"] = False
@@ -135,7 +135,7 @@ class UserProfileView(LoginRequiredMixin, View):
         
         context = {
             "profile": profile, 
-            "update_form": update_form,
+            "profile_form": update_form,
             "password_change_form": forms.UserAccountChangePasswordForm(request.user),
         }
         
