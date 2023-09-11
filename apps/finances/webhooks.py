@@ -20,9 +20,9 @@ def activate_free_plan_on_subscription_deletion(event: djstripe_models.Event):
     :param event:
     :return:
     """
-    if settings.ENABLE_SUBSCRIPTION and settings.HAS_TRIAL_PERIOD_OR_FREE:
-        free_plan_price = models.Price.objects.all().order_by("unit_amount").first()
-        subscriptions.create_schedule(customer=event.customer, price=free_plan_price)
+    if settings.SUBSCRIPTION_ENABLE and settings.SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE:
+        free_product = models.Product.objects.get(id=settings.SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID)
+        subscriptions.create_schedule(customer=event.customer, price=free_product.default_price)
 
 
 @webhooks.handler('subscription_schedule.released')

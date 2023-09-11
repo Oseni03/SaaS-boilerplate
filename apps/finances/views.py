@@ -9,7 +9,7 @@ from django.views.generic import View
 from django.views.generic import TemplateView
 from djstripe import models as djstripe_models
 
-from .services import customers
+from .services import customers, subscriptions 
 
 class PricingView(TemplateView):
     template_name = "finances/pricing.html"
@@ -38,12 +38,13 @@ class PricingPayment(LoginRequiredMixin, View):
         (customer, _) = djstripe_models.Customer.get_or_create(request.user)
         
         try:
-            subscription = customer.subscribe(
+            subscription = djstripe_models.Subscription._api_create(
                 price=price_id,
                 payment_behavior='default_incomplete',
                 payment_settings={'save_default_payment_method': 'on_subscription'},
                 expand=['latest_invoice.payment_intent', 'pending_setup_intent'],
             )
+            subscriptions.create_schedule(subscription=subscription, customer=customer)
             
             djstripe_models.Subscription.sync_from_stripe_data(subscription)
             

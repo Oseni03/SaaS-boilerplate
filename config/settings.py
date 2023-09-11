@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     
     # Internal Apps 
     "apps.users",
-    # "apps.finances",
+    "apps.finances",
     "apps.notifications",
     
     # External Apps 
@@ -294,9 +294,10 @@ DJSTRIPE_WEBHOOK_VALIDATION="verify_signature" # retrieve_event
 STRIPE_CHECKS_ENABLED = getenv("STRIPE_CHECKS_ENABLED", default=True)
 if not STRIPE_CHECKS_ENABLED:
     SILENCED_SYSTEM_CHECKS.append("djstripe.C001")
-ENABLE_SUBSCRIPTION = getenv("ENABLE_SUBSCRIPTION")
-HAS_TRIAL_PERIOD_OR_FREE = getenv("HAS_TRIAL_PERIOD_OR_FREE")
+SUBSCRIPTION_ENABLE = getenv("SUBSCRIPTION_ENABLE")
+SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE = getenv("SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE")
 SUBSCRIPTION_TRIAL_PERIOD_DAYS = getenv("SUBSCRIPTION_TRIAL_PERIOD_DAYS", default=7)
+SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID = getenv("SUBSCRIPTION_TRIAL_PRODUCT_ID")
 
 
 TASKS_BASE_HANDLER = getenv("TASKS_BASE_HANDLER", default="common.tasks.Task")

@@ -96,16 +96,21 @@ class LogoutView(LoginRequiredMixin, View):
 class UserProfileView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         profile = models.UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
+        profile_data = {
+            "first_name": profile.first_name,
+            "last_name": profile.last_name,
+            # "email": request.user.email,
+            "avatar": profile.avatar,
+        }
         context = {
             "profile": profile, 
-            "profile_form": forms.UserProfileForm(initial={
-                "first_name": profile.first_name,
-                "last_name": profile.last_name,
-                # "email": request.user.email,
-                "avatar": profile.avatar,
-            }),
+            "profile_form": forms.UserProfileForm(initial=profile_data),
             "password_change_form": forms.UserAccountChangePasswordForm(request.user),
         }
+        if settings.ENABLE_SUBSCRIPTION:
+            context["subscription"] = True
+        else:
+            context["subscription"] = False
         return render(request, "users/profile.html", context)
     
     def post(self, request, *args, **kwargs):

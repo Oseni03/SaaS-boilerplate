@@ -16,6 +16,7 @@
                     <p><span class="fw-bold">Roles:</span> {{ user.get_roles }}</p>
                 </div>
             </div>
+            <a href="{% url 'finances:profile_subscription' %}" class="btn btn-dark">Subscription</a>
         </div>
         <div id="user-profile" class="mb-4">
             <h4>Personal data</h4>

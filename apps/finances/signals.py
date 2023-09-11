@@ -11,5 +11,5 @@ User = get_user_model()
 @receiver(post_save, sender=User)
 def create_free_plan_subscription(sender, instance, created, **kwargs):
     if created:
-        if settings.ENABLE_SUBSCRIPTION and settings.HAS_TRIAL_PERIOD_OR_FREE:
+        if settings.SUBSCRIPTION_ENABLE and settings.SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE:
             subscriptions.initialize_user(user=instance)

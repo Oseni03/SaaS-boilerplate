@@ -14,8 +14,8 @@ def initialize_user(user):
     :param user:
     :return:
     """
-    price = models.Price.objects.all().order_by("unit_amount").first()
-    create_schedule(user=user, price=price)
+    free_product = models.Product.objects.get(id=settings.SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID)
+    create_schedule(customer=event.customer, price=free_product.default_price)
 
 
 def get_schedule(user=None, customer=None):
