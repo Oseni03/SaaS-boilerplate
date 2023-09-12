@@ -21,7 +21,7 @@ def notify_about_entry(sender, instance: models.Notification, created, update_fi
             "notifications",
             {
                 "type": "send_notification",
-                "message": message
+                "message": "New notification"
             }
         )
         

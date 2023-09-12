@@ -16,7 +16,7 @@ class Notification(models.Model):
 
     created_at: datetime.datetime = models.DateTimeField(auto_now_add=True)
     read_at: Optional[datetime.datetime] = models.DateTimeField(null=True, blank=True)
-
+    
     data: dict = models.JSONField(default=dict)
 
     objects = managers.NotificationManager()
@@ -31,3 +31,15 @@ class Notification(models.Model):
     @is_read.setter
     def is_read(self, val: bool):
         self.read_at = timezone.now() if val else None
+    
+    @property
+    def message(self):
+        return self.data.get("message")
+    
+    @property
+    def title(self):
+        return self.data.get("title")
+    
+    @property
+    def url(self):
+        return self.data.get("url")

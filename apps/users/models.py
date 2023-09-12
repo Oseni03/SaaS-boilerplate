@@ -84,6 +84,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         from .services.users import get_role_names
         return get_role_names(self)
     
+    @property
+    def has_unread_notifications(self):
+        from apps.notifications.services import NotificationService
+        return NotificationService.user_has_unread_notifications(self)
+    
     def set_paid_until(self, date_or_timestamp):
         if isinstance(date_or_timestamp, int):
             paid_until = date.fromtimestamp(date_or_timestamp)
