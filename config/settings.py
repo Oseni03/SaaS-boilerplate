@@ -42,8 +42,10 @@ INSTALLED_APPS = [
     "apps.users",
     "apps.finances",
     "apps.notifications",
+    "apps.websockets",
     
     # External Apps 
+    "channels",
     'django_hosts',
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
@@ -51,7 +53,6 @@ INSTALLED_APPS = [
     "storages",
     "social_django",
     "djstripe",
-    "channels",
     "widget_tweaks",
 ]
 
@@ -91,8 +92,8 @@ TEMPLATES = [
 ]
 
 
-WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = "config.asgi.application"
+WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 if DEVELOPMENT_MODE is True:
