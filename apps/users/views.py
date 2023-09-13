@@ -12,39 +12,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
 from django.views.generic import View
 
-from djoser.social.views import ProviderAuthView
 
 import qrcode
 
 from . import notifications, forms, models, tokens, jwt
 from .services import otp as otp_services
-
-class CustomProvideAuthView(ProviderAuthView):
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        
-        if response.status_code == 200:
-            access_token = response.data.get("access")
-            refresh_token = response.data.get("refresh")
-            
-            response.set_cookie(
-                "access", access_token,
-                max_age=settings.AUTH_COOKIE_ACCESS_MAX_AGE,
-                path=settings.AUTH_COOKIE_PATH,
-                secure=settings.AUTH_COOKIE_SECURE,
-                httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-                samesite=settings.AUTH_COOKIE_SAMESITE
-            )
-            
-            response.set_cookie(
-                "refresh", refresh_token,
-                max_age=settings.AUTH_COOKIE_REFRESH_MAX_AGE,
-                path=settings.AUTH_COOKIE_PATH,
-                secure=settings.AUTH_COOKIE_SECURE,
-                httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-                samesite=settings.AUTH_COOKIE_SAMESITE
-            )
-        return response
 
 
 # Create your views here.
