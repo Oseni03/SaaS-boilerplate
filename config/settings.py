@@ -53,11 +53,11 @@ INSTALLED_APPS = [
     'django_hosts',
     "rest_framework_simplejwt.token_blacklist",
     "storages",
-    "social_django",
     "djstripe",
     "widget_tweaks",
-    # social 
+    # social apps
     'allauth',
+    'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
@@ -72,9 +72,9 @@ SOCIALACCOUNT_PROVIDERS = {
         # (``socialaccount`` app) containing the required client
         # credentials, or list them here:
         'APP': {
-            'client_id': '123',
-            'secret': '456',
-            'key': ''
+            'client_id': env("GOOGLE_AUTH_CLIENT_ID"),
+            'secret': env("GOOGLE_AUTH_SECRET_KEY"),
+            'key': env("GOOGLE_AUTH_KEY", default=""),
         },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {
@@ -84,9 +84,9 @@ SOCIALACCOUNT_PROVIDERS = {
     },
     'facebook': {
         'APP': {
-            'client_id': '123',
-            'secret': '456',
-            'key': ''
+            'client_id': env("FACEBOOK_AUTH_CLIENT_ID"),
+            'secret': env("FACEBOOK_AUTH_SECRET_KEY"),
+            'key': env("FACEBOOK_AUTH_KEY", default="")
         },
         'METHOD': 'oauth2',
         'SCOPE': ['email', 'public_profile'],
@@ -102,20 +102,8 @@ SOCIALACCOUNT_PROVIDERS = {
         'GRAPH_API_URL': 'https://graph.facebook.com/v13.0',
     },
 }
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env("GOOGLE_AUTH_KEY")
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("GOOGLE_AUTH_SECRET")
-SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
-    "https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/userinfo.profile",
-]
-SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ["first_name", "last_name"]
 
-SOCIAL_AUTH_FACEBOOK_KEY = env("FACEBOOK_AUTH_KEY")
-SOCIAL_AUTH_FACEBOOK_SECRET = env("FACEBOOK_AUTH_SECRET_KEY")
-SOCIAL_AUTH_FACEBOOK_SCOPE = ["email"]
-SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
-    "fields": "email, first_name, last_name"
-}
+USERNAME_REQUIRED = env.bool("USERNAME_REQUIRED", default=False)
 
 MIDDLEWARE = [
     # Django-hosts config
@@ -127,6 +115,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # allauth middleware
+    "allauth.account.middleware.AccountMiddleware",
     # Django-hosts config
     'django_hosts.middleware.HostsResponseMiddleware',
 ]
@@ -348,15 +338,20 @@ UPLOADED_DOCUMENT_SIZE_LIMIT = env.int("UPLOADED_DOCUMENT_SIZE_LIMIT", default=1
 USER_DOCUMENTS_NUMBER_LIMIT = env.int("USER_DOCUMENTS_NUMBER_LIMIT", default=10)
 
 
-CHANNEL_LAYERS = {
-    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
-}
-
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("127.0.0.1", 6379)],
-#         },
-#     },
-# }
+# # Channels configurations
+if DEVELOPMENT_MODE is True:
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(
+                    env("REDIS_IP_ADDRESS"), 
+                    env("REDIS_PORT"), 
+                )],
+            },
+        },
+    }
