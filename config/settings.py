@@ -1,31 +1,34 @@
 from pathlib import Path
-from os import getenv, path
 from django.core.management.utils import get_random_secret_key
 
 import sys
-import dotenv
+import os
 import datetime
+import environ
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-dotenv_file = BASE_DIR / ".env.local"
+env = environ.Env(
+    # set casting, default value
+    DEBUG=(bool, False),
+)
 
-if path.isfile(dotenv_file):
-    dotenv.load_dotenv(dotenv_file)
+# Take environment variables from .env file
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 
-SECRET_KEY = getenv("DJANGO_SECRET_KEY", get_random_secret_key())
+SECRET_KEY = env("DJANGO_SECRET_KEY", default=get_random_secret_key())
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = getenv("DEBUG", "False") == "True"
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = getenv("DJANGO_ALLOWED_HOSTS", "127.0.00.1, localhost, api.localhost, admin.localhost").split(", ")
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["127.0.00.1", "localhost", "api.localhost", "admin.localhost"])
 
 
-DEVELOPMENT_MODE = getenv("DEVELOPMENT_MODE", "False") == "True"
+DEVELOPMENT_MODE = env.bool("DEVELOPMENT_MODE", default=True)
 
 # Application definition
 
@@ -92,6 +95,17 @@ TEMPLATES = [
 ]
 
 
+PASSWORD_HASHERS = env.list(
+    "DJANGO_PASSWORD_HASHERS",
+    default=[
+        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+        'django.contrib.auth.hashers.Argon2PasswordHasher',
+        'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    ],
+)
+
+
 ASGI_APPLICATION = "config.asgi.application"
 WSGI_APPLICATION = 'config.wsgi.application'
 
@@ -104,27 +118,27 @@ if DEVELOPMENT_MODE is True:
         }
     }
 elif len(sys.argv) > 0 and sys.argv[1] != "collectstatic":
-    if getenv("DATABASE_URL", None) is None:
+    if env("DATABASE_URL", default="") is None:
         raise Exception("DATABASE_URL environment not defined")
     DATABASES = {
-        "default": dj_database_url.parse(getenv("DATABASE_URL"))
+        "default": dj_database_url.parse(env("DATABASE_URL"))
     }
 
 # Email Settings 
 # EMAIL_BACKEND = "django_ses.SESBackend"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = getenv("AWS_SES_FROM_EMAIL")
+DEFAULT_FROM_EMAIL = env("AWS_SES_FROM_EMAIL")
 
-AWS_SES_ACCESS_KEY_ID = getenv("AWS_SES_ACCESS_KEY_ID")
-AWS_SES_SECRET_ACCESS_KEY = getenv("AWS_SES_SECRET_ACCESS_KEY")
-AWS_SES_REGION_NAME = getenv("AWS_SES_REGION_NAME")
+AWS_SES_ACCESS_KEY_ID = env("AWS_SES_ACCESS_KEY_ID")
+AWS_SES_SECRET_ACCESS_KEY = env("AWS_SES_SECRET_ACCESS_KEY")
+AWS_SES_REGION_NAME = env("AWS_SES_REGION_NAME")
 AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
-AWS_SES_FROM_EMAIL = getenv("AWS_SES_FROM_EMAIL")
+AWS_SES_FROM_EMAIL = env("AWS_SES_FROM_EMAIL")
 USE_SES_V2 = True
 
 
-DOMAIN = getenv("DOMAIN")
-SITE_NAME = getenv("SITE_NAME")
+DOMAIN = env("DOMAIN", default="localhost")
+SITE_NAME = env("SITE_NAME", default="Saas Boilerplate")
 
 
 # Password validation
@@ -151,16 +165,16 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = getenv("GOOGLE_AUTH_KEY")
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = getenv("GOOGLE_AUTH_SECRET")
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env("GOOGLE_AUTH_KEY")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("GOOGLE_AUTH_SECRET")
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile",
 ]
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ["first_name", "last_name"]
 
-SOCIAL_AUTH_FACEBOOK_KEY = getenv("FACEBOOK_AUTH_KEY")
-SOCIAL_AUTH_FACEBOOK_SECRET = getenv("FACEBOOK_AUTH_SECRET_KEY")
+SOCIAL_AUTH_FACEBOOK_KEY = env("FACEBOOK_AUTH_KEY")
+SOCIAL_AUTH_FACEBOOK_SECRET = env("FACEBOOK_AUTH_SECRET_KEY")
 SOCIAL_AUTH_FACEBOOK_SCOPE = ["email"]
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
     "fields": "email, first_name, last_name"
@@ -188,10 +202,10 @@ if DEVELOPMENT_MODE is True:
         BASE_DIR / "media"
     ]
 else:
-    AWS_S3_ACCESS_KEY_ID = getenv("AWS_S3_ACCESS_KEY_ID")
-    AWS_S3_SECRET_ACCESS_KEY = getenv("AWS_S3_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = getenv("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_REGION_NAME = getenv("AWS_S3_REGION_NAME")
+    AWS_S3_ACCESS_KEY_ID = env("AWS_S3_ACCESS_KEY_ID")
+    AWS_S3_SECRET_ACCESS_KEY = env("AWS_S3_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME")
     AWS_S3_ENDPOINT_URL = f"https://${AWS_S3_REGION_NAME}.digitaloceanspaces.com"
     AWS_S3_OBJECT_PARAMETERS = {
         "CacheControl": "max-age=86400",
@@ -199,17 +213,21 @@ else:
     AWS_DEFAULT_ACL = "public-read"
     AWS_LOCATION = "static"
     AWS_MEDIA_LOCATION = "media"
-    AWS_S3_CUSTOM_DOMAIN = getenv("AWS_S3_CUSTOM_DOMAIN", default=None)
+    AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default=None)
     STORAGES = {
         "default": {"BACKEND": "custom_storages.CustomS3Boto3Storage"},
         "staticfiles": {"BACKEND": "storages.backends.s3boto3.S3StaticStorage"},
     }
+    
+    AWS_QUERYSTRING_EXPIRE = env("AWS_QUERYSTRING_EXPIRE", default=60 * 60 * 24)
+    AWS_CLOUDFRONT_KEY = os.environ.get('AWS_CLOUDFRONT_KEY', '').encode('ascii')
+    AWS_CLOUDFRONT_KEY_ID = os.environ.get('AWS_CLOUDFRONT_KEY_ID', None)
 
 # Default primary key field type
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-HASHID_FIELD_SALT = getenv("HASHID_FIELD_SALT", get_random_secret_key())
+HASHID_FIELD_SALT = env("HASHID_FIELD_SALT", default=get_random_secret_key())
 
 AUTH_USER_MODEL = "users.User"
 
@@ -238,12 +256,12 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': getenv('DJANGO_LOG_LEVEL', default='INFO'),
+        'level': env('DJANGO_LOG_LEVEL', default='INFO'),
     },
     'loggers': {
         '*': {
             'handlers': ['console'],
-            'level': getenv('DJANGO_LOG_LEVEL', default='INFO'),
+            'level': env('DJANGO_LOG_LEVEL', default='INFO'),
             'propagate': False,
         },
     },
@@ -252,7 +270,7 @@ LOGGING = {
 
 DJOSER = {
     "TOKEN_MODEL": None,
-    "SOCIAL_AUTH_REDIRECT_URIS": getenv('REDIRECT_URLS').split(",")
+    "SOCIAL_AUTH_REDIRECT_URIS": env.list('REDIRECT_URLS', default=[])
 }
 
 REST_FRAMEWORK = {
@@ -277,37 +295,37 @@ REST_FRAMEWORK = {
 
 OTP_AUTH_ISSUER_NAME = SITE_NAME
 OTP_AUTH_TOKEN_COOKIE = 'otp_token'
-OTP_AUTH_TOKEN_LIFETIME_MINUTES = datetime.timedelta(minutes=getenv('OTP_AUTH_TOKEN_LIFETIME_MINUTES', default=5))
+OTP_AUTH_TOKEN_LIFETIME_MINUTES = datetime.timedelta(minutes=env('OTP_AUTH_TOKEN_LIFETIME_MINUTES', default=5))
 OTP_VALIDATE_PATH = "/auth/validate-otp"
 
 
 RATELIMIT_IP_META_KEY = "common.utils.get_client_ip"
 
 
-STRIPE_TEST_PUBLIC_KEY = getenv("STRIPE_TEST_PUBLIC_KEY")
-STRIPE_PUBLISHABLE_KEY = getenv("STRIPE_PUBLISHABLE_KEY")
-STRIPE_LIVE_MODE = getenv("STRIPE_LIVE_MODE", "True") == "True"
-DJSTRIPE_WEBHOOK_SECRET = getenv("DJSTRIPE_WEBHOOK_SECRET")  # We don't use this, but it must be set
+STRIPE_TEST_PUBLIC_KEY = env("STRIPE_TEST_PUBLIC_KEY")
+STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
+STRIPE_LIVE_MODE = env.bool("STRIPE_LIVE_MODE", default=False)
+DJSTRIPE_WEBHOOK_SECRET = env("DJSTRIPE_WEBHOOK_SECRET")  # We don't use this, but it must be set
 DJSTRIPE_USE_NATIVE_JSONFIELD = False
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
 DJSTRIPE_WEBHOOK_VALIDATION="verify_signature" # retrieve_event
 # DJSTRIPE_SUBSCRIBER_MODEL = "users.Profile"
-STRIPE_CHECKS_ENABLED = getenv("STRIPE_CHECKS_ENABLED", default=True)
+STRIPE_CHECKS_ENABLED = env.bool("STRIPE_CHECKS_ENABLED", default=True)
 if not STRIPE_CHECKS_ENABLED:
     SILENCED_SYSTEM_CHECKS.append("djstripe.C001")
-SUBSCRIPTION_ENABLE = getenv("SUBSCRIPTION_ENABLE")
-SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE = getenv("SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE")
-SUBSCRIPTION_TRIAL_PERIOD_DAYS = getenv("SUBSCRIPTION_TRIAL_PERIOD_DAYS", default=7)
-SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID = getenv("SUBSCRIPTION_TRIAL_PRODUCT_ID")
+SUBSCRIPTION_ENABLE = env.bool("SUBSCRIPTION_ENABLE", default=True)
+SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE = env.bool("SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE", default=True)
+SUBSCRIPTION_TRIAL_PERIOD_DAYS = env.int("SUBSCRIPTION_TRIAL_PERIOD_DAYS", default=7)
+SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID = env("SUBSCRIPTION_TRIAL_PRODUCT_ID", default=None)
 
 
-TASKS_BASE_HANDLER = getenv("TASKS_BASE_HANDLER", default="common.tasks.Task")
-WORKERS_EVENT_BUS_NAME = getenv("WORKERS_EVENT_BUS_NAME", default=None)
-AWS_ENDPOINT_URL = getenv("AWS_ENDPOINT_URL", default=None)
-TASKS_LOCAL_URL = getenv("TASKS_LOCAL_URL", default=None)
+TASKS_BASE_HANDLER = env("TASKS_BASE_HANDLER", default="common.tasks.Task")
+WORKERS_EVENT_BUS_NAME = env("WORKERS_EVENT_BUS_NAME", default=None)
+AWS_ENDPOINT_URL = env("AWS_ENDPOINT_URL", default=None)
+TASKS_LOCAL_URL = env("TASKS_LOCAL_URL", default=None)
 
-UPLOADED_DOCUMENT_SIZE_LIMIT = getenv("UPLOADED_DOCUMENT_SIZE_LIMIT", default=10 * 1024 * 1024)
-USER_DOCUMENTS_NUMBER_LIMIT = getenv("USER_DOCUMENTS_NUMBER_LIMIT", default=10)
+UPLOADED_DOCUMENT_SIZE_LIMIT = env.int("UPLOADED_DOCUMENT_SIZE_LIMIT", default=10 * 1024 * 1024)
+USER_DOCUMENTS_NUMBER_LIMIT = env.int("USER_DOCUMENTS_NUMBER_LIMIT", default=10)
 
 
 CHANNEL_LAYERS = {
