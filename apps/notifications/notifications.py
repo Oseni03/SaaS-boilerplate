@@ -16,5 +16,5 @@ class UserNotification(websockets.Websocket):
 
 
 class SendUserNotification(UserNotification):
-    name = 'SEND_NOTIFICATION'
+    name = 'NOTIFICATION'
     serializer_class = websocket_serializers.NotificationSerializer

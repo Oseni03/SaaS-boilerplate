@@ -1,5 +1,6 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.conf import settings
 
 from . import models, constants, notifications
 
@@ -12,7 +13,7 @@ def notify_about_entry(sender, instance: models.Notification, created, update_fi
             data={
                 'notification_id': self.id.hashid, 
                 'type': instance.type,
-                'data': instance.data
+                'data': instance.data,
             }
         ).send()
         # USE DJANGO CHANNELS TO SEND THE NOTIFICATION TO THE CLIENT
