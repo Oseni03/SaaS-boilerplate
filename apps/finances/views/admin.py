@@ -3,7 +3,7 @@ from djstripe import models as djstripe_models
 from rest_framework import response, views, renderers, status
 
 from common.acl import policies
-from . import serializers
+from .. import serializers
 
 
 class AdminRefundView(views.APIView):

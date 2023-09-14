@@ -323,7 +323,7 @@ STRIPE_LIVE_MODE = env.bool("STRIPE_LIVE_MODE", default=False)
 DJSTRIPE_WEBHOOK_SECRET = env("DJSTRIPE_WEBHOOK_SECRET")  # We don't use this, but it must be set
 DJSTRIPE_USE_NATIVE_JSONFIELD = False
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
-DJSTRIPE_WEBHOOK_VALIDATION="verify_signature" # retrieve_event
+DJSTRIPE_WEBHOOK_VALIDATION="retrieve_event" # verify_signature
 # DJSTRIPE_SUBSCRIBER_MODEL = "users.Profile"
 STRIPE_CHECKS_ENABLED = env.bool("STRIPE_CHECKS_ENABLED", default=True)
 if not STRIPE_CHECKS_ENABLED:

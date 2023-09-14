@@ -9,7 +9,7 @@ from django.views.generic import View
 from django.views.generic import TemplateView
 from djstripe import models as djstripe_models
 
-from .services import customers, subscriptions 
+from ..services import customers, subscriptions 
 
 class PricingView(TemplateView):
     template_name = "finances/pricing.html"

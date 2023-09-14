@@ -1,7 +1,7 @@
 import logging
 
 from common import emails
-from . import email_serializers
+from ..finances import serializers
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +16,9 @@ class CustomerEmail(emails.Email):
 
 class TrialExpiresSoonEmail(CustomerEmail):
     name = 'TRIAL_EXPIRES_SOON'
-    serializer_class = email_serializers.TrialExpiresSoonEmailSerializer
+    serializer_class = serializers.TrialExpiresSoonEmailSerializer
 
 
 class SubscriptionErrorEmail(CustomerEmail):
     name = 'SUBSCRIPTION_ERROR'
-    serializer_class = email_serializers.SubscriptionErrorSerializer
+    serializer_class = serializers.SubscriptionErrorSerializer
