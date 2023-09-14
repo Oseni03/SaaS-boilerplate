@@ -126,7 +126,7 @@ MIDDLEWARE = [
     'django_hosts.middleware.HostsResponseMiddleware',
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = 'config.urls.main'
 ROOT_HOSTCONF = "config.hosts"
 DEFAULT_HOST = "main"
 # PARENT_HOST = "localhost:8000"
