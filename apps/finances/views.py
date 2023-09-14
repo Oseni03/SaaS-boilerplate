@@ -26,8 +26,11 @@ class PricingPayment(LoginRequiredMixin, View):
     
     def get(self, request, price_id, *args, **kwargs):
         price = get_object_or_404(djstripe_models.Price, id=price_id)
+        intent = customers.setup_intent(request.user)
+        
         context = {
-            "price": price
+            "price": price,
+            "clientSecret": intent.client_secret
         }
         context["STRIPE_PUBLISHABLE_KEY"] = settings.STRIPE_PUBLISHABLE_KEY
         context["redirect_url"] = reverse("finances:profile_subscription")
@@ -35,18 +38,20 @@ class PricingPayment(LoginRequiredMixin, View):
     
     def post(self, request, price_id=None, *args, **kwargs):
         data = json.loads(request.data)
+        payment_method_id = data.get("payment_method_id")
         (customer, _) = djstripe_models.Customer.get_or_create(request.user)
+        customers.set_default_payment_method(request.user, payment_method_id)
         
         try:
-            subscription = djstripe_models.Subscription._api_create(
+            sub = djstripe_models.Subscription._api_create(
                 price=price_id,
                 payment_behavior='default_incomplete',
                 payment_settings={'save_default_payment_method': 'on_subscription'},
                 expand=['latest_invoice.payment_intent', 'pending_setup_intent'],
             )
-            subscriptions.create_schedule(subscription=subscription, customer=customer)
+            subscription = djstripe_models.Subscription.sync_from_stripe_data(sub)
             
-            djstripe_models.Subscription.sync_from_stripe_data(subscription)
+            subscriptions.create_schedule(subscription=subscription, customer=customer)
             
             if subscription.pending_setup_intent is not None:
                 return JsonResponse({

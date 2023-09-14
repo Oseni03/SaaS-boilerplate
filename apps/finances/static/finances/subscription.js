@@ -1,23 +1,15 @@
-function makeSubscription(stripe_publishable_key, price_amount, price_id, redirect_url) {
+function makeSubscription(stripe_publishable_key, customer_email, clientSecret, price_id, redirect_url) {
     document.addEventListener("DOMContentLoader", function(event) {
         const stripe = Stripe(stripe_publishable_key);
         
-        const options = {
-          mode: 'subscription',
-          amount: price_amount,
-          currency: 'usd',
-          // Fully customizable with appearance API.
-          appearance: {/*...*/},
-        };
-        
         // Set up Stripe.js and Elements to use in checkout form
-        const elements = stripe.elements(options);
+        const elements = stripe.elements({"clientSecret": clientSecret});
         
-        // Create and mount the Payment Element
-        const paymentElement = elements.create('payment');
-        paymentElement.mount('#payment-element');
+        // Create and mount the Card Element
+        const cardElement = elements.create('card');
+        cardElement.mount('#card-element');
         
-        const form = document.getElementById('payment-form');
+        var form = document.getElementById('card-form');
         const submitBtn = document.getElementById('submit_btn');
         
         const handleError = (error) => {
@@ -25,6 +17,12 @@ function makeSubscription(stripe_publishable_key, price_amount, price_id, redire
           messageContainer.textContent = error.message;
           submitBtn.disabled = false;
         }
+        
+        cardElement.addEventListener('change', function(event) => {
+          if (event.error) {
+            handleError(event.error);
+          }
+        });
         
         form.addEventListener('submit', async (event) => {
           // We don't want to let default form submission happen here,
@@ -39,80 +37,53 @@ function makeSubscription(stripe_publishable_key, price_amount, price_id, redire
           // Disable form submission while loading
           submitBtn.disabled = true;
         
-          // Trigger form validation and wallet collection
-          const {error: submitError} = await elements.submit();
-          if (submitError) {
-            handleError(submitError);
-            return;
-          }
-        
-          // Create the subscription
-          const res = await fetch('/pricing/'+price_id+'/payment/', {
-            method: "POST",
-          });
-          const data = await res.json();
-          const type = data["type"]
-          const clientSecret = data["clientSecret"]
-          const confirmIntent = type === "setup" ? stripe.confirmSetup : stripe.confirmPayment;
-        
-          // Confirm the Intent using the details collected by the Payment Element
-          const {error} = await confirmIntent({
-            elements,
-            clientSecret,
-            confirmParams: {
-              return_url: redirect_url,
-            },
-          });
-        
-          if (error) {
-            // This point is only reached if there's an immediate error when confirming the Intent.
-            // Show the error to your customer (for example, "payment details incomplete").
-            handleError(error);
-          } else {
-            // Your customer is redirected to your `return_url`. For some payment
-            // methods like iDEAL, your customer is redirected to an intermediate
-            // site first to authorize the payment, then redirected to the `return_url`.
-            
-            // If 3D security is not handle, should retrieve the payment intent clientSecret then pass it to stripe.confirmCardPayment(client_secret)
-            
-            // Retrieve the PaymentIntent
-            stripe.retrievePaymentIntent(clientSecret).then(({paymentIntent}) => {
-              const message = document.querySelector('#message')
-            
-              // Inspect the PaymentIntent `status` to indicate the status of the payment
-              // to your customer.
-              //
-              // Some payment methods will [immediately succeed or fail][0] upon
-              // confirmation, while others will first enter a `processing` state.
-              //
-              // [0]: https://stripe.com/docs/payments/payment-methods#payment-notification
-              switch (paymentIntent.status) {
-            
-                case 'processing':
-                  handleError({message: "Payment processing. We'll update you when payment is received."});
-                  break;
-            
-                case 'requires_payment_method':
-                  handleError({message: "Payment failed. Please try another payment method."});
-                  // Redirect your user back to your payment page to attempt collecting
-                  // payment again
-                  break;
-            
-                case 'requires_action':
-                    stripe.confirmCardPayment(clientSecret).then(function(result) {
-                        if (result.error) {
-                            handleError(result.error);
-                            break
-                        }
-                    });
-        
-                default:
-                  handleError({message: "Something went wrong."});
-                  break;
+          stripe.createToken(cardElement).then(function(event) {
+              if (event.error) {
+                  handleError(event.error);
+              } else {
+                  // Create payment method
+                  stripe.createPaymentMethod({
+                      type: "card",
+                      card: card,
+                      billing_details: {
+                          email: customer_email,
+                      }
+                  }).then(function(payment_method_result) {
+                      if (payment_method_result.error) {
+                          handleError(payment_method_result.error);
+                      } else {
+                          
+                          // Create the subscription
+                          const res = await fetch('/finances/pricing/'+price_id+'/payment/', {
+                            method: "POST",
+                            body: JSON.stringify({
+                                payment_method_id: payment_method_result.paymentMethod.id,
+                            }),
+                          });
+                          const data = await res.json();
+                          const type = data["type"]
+                          const clientSecret = data["clientSecret"]
+                        
+                          // Confirm card payment with an existing payment method 
+                          
+                          stripe.confirmCardPayment(clientSecret, {
+                            payment_method: payment_method_result.paymentMethod.id,
+                            return_url: return_url
+                          })
+                          .then(function(result) {
+                            // Handle result.error or result.paymentIntent
+                            if (result.error) {
+                                handleError(error);
+                            }
+                          });
+                          
+                          
+                      }
+                  })
               }
-            });
-          }
+          })
+        
         });
         
     })
-}) 
+}

@@ -183,7 +183,7 @@ class UserAccountResendConfirmationView(FormView):
 class PasswordResetView(FormView):
     form_class = forms.PasswordResetForm
     template_name = "users/password_reset.html" 
-    success_url = reverse_lazy("users:password_reset_confirm") 
+    success_url = reverse_lazy("users:login") 
     
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -198,7 +198,7 @@ class PasswordResetView(FormView):
     
     def form_valid(self, form):
         form.save()
-        messages.info(request, "Email has been sent your email with instructions to reset your password")
+        messages.info(self.request, "Email has been sent your email with instructions to reset your password")
         return super().form_valid(form)
 
 
