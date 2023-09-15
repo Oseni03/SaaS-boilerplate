@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load price_filter %}
 
 {% block extra_css %}
 <link href="{% static "finances/pricing.css" %}" rel="stylesheet">
@@ -31,24 +32,27 @@
     </ul>
     <div class="tab-content" id="pills-tabContent">
       <div class="tab-pane fade show active" id="pills-month" role="tabpanel" aria-labelledby="pills-month-tab" tabindex="0">
-        <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
+        <div class="row row-cols-1 row-cols-md-3 mb-3 text-center d-flex justify-content-center">
+          {% for price in monthly %}
           <div class="col">
             <div class="card mb-4 rounded-3 shadow-sm border-dark">
               <div class="card-header py-3">
-                <h4 class="my-0 fw-normal">Free</h4>
+                <h4 class="my-0 fw-normal">{{ price.product.name }}</h4>
               </div>
               <div class="card-body">
-                <h1 class="card-title pricing-card-title">$0<small class="text-body-secondary fw-light">/mo</small></h1>
+                <h1 class="card-title pricing-card-title">${{ price.unit_amount|dollar }}<small class="text-body-secondary fw-light">/mo</small></h1>
                 <ul class="list-unstyled mt-3 mb-4">
-                  <li>10 users included</li>
-                  <li>2 GB of storage</li>
-                  <li>Email support</li>
-                  <li>Help center access</li>
+                  {% for feature in price.product.features %}
+                  <li>{{ feature }}</li>
+                  {% endfor %}
                 </ul>
-                <a type="button" class="w-100 btn btn-lg btn-outline-dark">Sign up for free</a>
+                <a type="button" class="w-100 btn btn-lg btn-outline-dark" href="{{ price.get_absolute_url }}">Subscribe</a>
               </div>
             </div>
           </div>
+          {% endfor %}
+          
+          {% comment %}
           <div class="col">
             <div class="card mb-4 rounded-3 shadow-sm border-dark">
               <div class="card-header py-3 text-bg-secondary border-dark">
@@ -84,62 +88,29 @@
               </div>
             </div>
           </div>
+          {% endcomment %}
         </div>
       </div>
       <div class="tab-pane fade" id="pills-year" role="tabpanel" aria-labelledby="pills-year-tab" tabindex="0">
         <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
+          {% for price in yearly %}
           <div class="col">
             <div class="card mb-4 rounded-3 shadow-sm border-dark">
               <div class="card-header py-3">
-                <h4 class="my-0 fw-normal">Free</h4>
+                <h4 class="my-0 fw-normal">{{ price.product.name }}</h4>
               </div>
               <div class="card-body">
-                <h1 class="card-title pricing-card-title">$0<small class="text-body-secondary fw-light">/mo</small></h1>
+                <h1 class="card-title pricing-card-title">${{ price.unit_amount|dollar }}<small class="text-body-secondary fw-light">/mo</small></h1>
                 <ul class="list-unstyled mt-3 mb-4">
-                  <li>10 users included</li>
-                  <li>2 GB of storage</li>
-                  <li>Email support</li>
-                  <li>Help center access</li>
+                  {% for feature in price.product.features %}
+                  <li>{{ feature }}</li>
+                  {% endfor %}
                 </ul>
-                <a type="button" class="w-100 btn btn-lg btn-outline-dark">Sign up for free</a>
+                <a type="button" class="w-100 btn btn-lg btn-outline-dark" href="{{ price.get_absolute_url }}">Subscribe</a>
               </div>
             </div>
           </div>
-          <div class="col">
-            <div class="card mb-4 rounded-3 shadow-sm border-dark">
-              <div class="card-header py-3 text-bg-secondary border-dark">
-                <h4 class="my-0 fw-normal">Pro</h4>
-              </div>
-              <div class="card-body">
-                <h1 class="card-title pricing-card-title">$15<small class="text-body-secondary fw-light">/mo</small></h1>
-                <ul class="list-unstyled mt-3 mb-4">
-                  <li>20 users included</li>
-                  <li>10 GB of storage</li>
-                  <li>Priority email support</li>
-                  <li>Help center access</li>
-                </ul>
-                
-                <a type="button" class="w-100 btn btn-lg btn-outline-dark">Get started</a>
-              </div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="card mb-4 rounded-3 shadow-sm border-dark">
-              <div class="card-header py-3 text-bg-dark border-dark">
-                <h4 class="my-0 fw-normal">Enterprise</h4>
-              </div>
-              <div class="card-body">
-                <h1 class="card-title pricing-card-title">$29<small class="text-body-secondary fw-light">/mo</small></h1>
-                <ul class="list-unstyled mt-3 mb-4">
-                  <li>30 users included</li>
-                  <li>15 GB of storage</li>
-                  <li>Phone and email support</li>
-                  <li>Help center access</li>
-                </ul>
-                <a type="button" class="w-100 btn btn-lg btn-outline-dark">Contact us</a>
-              </div>
-            </div>
-          </div>
+          {% endfor %}
         </div>
       </div>
     </div>

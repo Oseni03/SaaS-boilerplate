@@ -10,14 +10,16 @@ from django.views.generic import TemplateView
 from djstripe import models as djstripe_models
 
 from ..services import customers, subscriptions 
+from .. import models
 
 class PricingView(TemplateView):
     template_name = "finances/pricing.html"
     
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        prices = djstripe_models.Price.objects.prefetch_related("product").all()
-        context["monthly"] = prices.filter(recurring__interval="month")
+        prices = models.Price.objects.prefetch_related("product").all()
+        print(dir(prices[0]))
+        context["monthly"] = prices.filter(recurring__interval="month").distinct()
         context["yearly"] = prices.filter(recurring__interval="year")
         return context 
 
