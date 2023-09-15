@@ -8,7 +8,7 @@ import environ
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
     # set casting, default value
@@ -63,8 +63,11 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
 ]
 
-SITE_ID = 1
 
+#-----------------------------------
+# DJANGO-ALLAUTH SETTINGS
+#-----------------------------------
+SITE_ID = 1
 # Provider specific settings
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
@@ -72,8 +75,8 @@ SOCIALACCOUNT_PROVIDERS = {
         # (``socialaccount`` app) containing the required client
         # credentials, or list them here:
         'APP': {
-            'client_id': env("GOOGLE_AUTH_CLIENT_ID"),
-            'secret': env("GOOGLE_AUTH_SECRET_KEY"),
+            'client_id': env("GOOGLE_AUTH_CLIENT_ID", default=""),
+            'secret': env("GOOGLE_AUTH_SECRET_KEY", default=""),
             'key': env("GOOGLE_AUTH_KEY", default=""),
         },
         'SCOPE': ['profile', 'email'],
@@ -84,8 +87,8 @@ SOCIALACCOUNT_PROVIDERS = {
     },
     'facebook': {
         'APP': {
-            'client_id': env("FACEBOOK_AUTH_CLIENT_ID"),
-            'secret': env("FACEBOOK_AUTH_SECRET_KEY"),
+            'client_id': env("FACEBOOK_AUTH_CLIENT_ID", default=""),
+            'secret': env("FACEBOOK_AUTH_SECRET_KEY", default=""),
             'key': env("FACEBOOK_AUTH_KEY", default="")
         },
         'METHOD': 'oauth2',
@@ -102,8 +105,6 @@ SOCIALACCOUNT_PROVIDERS = {
         'GRAPH_API_URL': 'https://graph.facebook.com/v13.0',
     },
 }
-
-
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
@@ -126,10 +127,13 @@ MIDDLEWARE = [
     'django_hosts.middleware.HostsResponseMiddleware',
 ]
 
+#-----------------------------------
+# DJANGO-HOSTS SETTINGS
+#+-----------------------------------
 ROOT_URLCONF = 'config.urls.main'
 ROOT_HOSTCONF = "config.hosts"
 DEFAULT_HOST = "main"
-# PARENT_HOST = "localhost:8000"
+PARENT_HOST = "localhost:8000"
 
 TEMPLATES = [
     {
@@ -159,43 +163,44 @@ PASSWORD_HASHERS = env.list(
 )
 
 
+#-----------------------------------
+# APPLICATION SETTINGS
+#-----------------------------------
 ASGI_APPLICATION = "config.asgi.application"
 WSGI_APPLICATION = 'config.wsgi.application'
+    
 
-# Database
-if DEVELOPMENT_MODE is True:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-elif len(sys.argv) > 0 and sys.argv[1] != "collectstatic":
-    if env("DATABASE_URL", default="") is None:
-        raise Exception("DATABASE_URL environment not defined")
-    DATABASES = {
-        "default": dj_database_url.parse(env("DATABASE_URL"))
-    }
-
-# Email Settings 
-# EMAIL_BACKEND = "django_ses.SESBackend"
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+#-----------------------------------
+# EMAIL SETTINGS
+#-----------------------------------
 DEFAULT_FROM_EMAIL = env("AWS_SES_FROM_EMAIL")
+# https://docs.djangoproject.com/en/dev/ref/settings/#server-email
+SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+# https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
+EMAIL_SUBJECT_PREFIX = env("EMAIL_SUBJECT_PREFIX", default="[SaaS]")
 
+
+#-----------------------------------
+# AWS SES SETTINGS(EMAIL)
+#-----------------------------------
 AWS_SES_ACCESS_KEY_ID = env("AWS_SES_ACCESS_KEY_ID")
 AWS_SES_SECRET_ACCESS_KEY = env("AWS_SES_SECRET_ACCESS_KEY")
 AWS_SES_REGION_NAME = env("AWS_SES_REGION_NAME")
 AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
-AWS_SES_FROM_EMAIL = env("AWS_SES_FROM_EMAIL")
+AWS_SES_FROM_EMAIL = env("AWS_SES_FROM_EMAIL", default="")
 USE_SES_V2 = True
 
 
+#-----------------------------------
+# MY SITE SETTINGS
+#-----------------------------------
 DOMAIN = env("DOMAIN", default="localhost")
 SITE_NAME = env("SITE_NAME", default="Saas Boilerplate")
 
 
+#-----------------------------------
 # Password validation
-
+#-----------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -229,39 +234,7 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-if DEVELOPMENT_MODE is True:
-    STATIC_URL = 'static/'
-    # STATIC_ROOT = BASE_DIR / "static"
-    MEDIA_URL = "media/"
-    MEDIA_ROOT = BASE_DIR / "media"
-    STATICFILES_DIRS = [
-        BASE_DIR / "static",
-        BASE_DIR / "media"
-    ]
-else:
-    AWS_S3_ACCESS_KEY_ID = env("AWS_S3_ACCESS_KEY_ID")
-    AWS_S3_SECRET_ACCESS_KEY = env("AWS_S3_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME")
-    AWS_S3_ENDPOINT_URL = f"https://${AWS_S3_REGION_NAME}.digitaloceanspaces.com"
-    AWS_S3_OBJECT_PARAMETERS = {
-        "CacheControl": "max-age=86400",
-    }
-    AWS_DEFAULT_ACL = "public-read"
-    AWS_LOCATION = "static"
-    AWS_MEDIA_LOCATION = "media"
-    AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default=None)
-    STORAGES = {
-        "default": {"BACKEND": "custom_storages.CustomS3Boto3Storage"},
-        "staticfiles": {"BACKEND": "storages.backends.s3boto3.S3StaticStorage"},
-    }
     
-    AWS_QUERYSTRING_EXPIRE = env("AWS_QUERYSTRING_EXPIRE", default=60 * 60 * 24)
-    AWS_CLOUDFRONT_KEY = os.environ.get('AWS_CLOUDFRONT_KEY', '').encode('ascii')
-    AWS_CLOUDFRONT_KEY_ID = os.environ.get('AWS_CLOUDFRONT_KEY_ID', None)
 
 # Default primary key field type
 
@@ -279,8 +252,11 @@ RATELIMIT_IP_META_KEY = "common.utils.get_client_ip"
 
 NOTIFICATIONS_STRATEGIES = ["InAppNotificationStrategy"]
 
-ADMINS = [DEFAULT_FROM_EMAIL]
 
+#-----------------------------------
+# LOGGING 
+#-----------------------------------
+ADMINS = [DEFAULT_FROM_EMAIL]
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -308,17 +284,18 @@ LOGGING = {
 }
 
 
+#-----------------------------------
+# OTP 
+#-----------------------------------
 OTP_AUTH_ISSUER_NAME = SITE_NAME
 OTP_AUTH_TOKEN_COOKIE = 'otp_token'
 OTP_AUTH_TOKEN_LIFETIME_MINUTES = datetime.timedelta(minutes=env('OTP_AUTH_TOKEN_LIFETIME_MINUTES', default=5))
 OTP_VALIDATE_PATH = "/auth/validate-otp"
 
 
-RATELIMIT_IP_META_KEY = "common.utils.get_client_ip"
-
-
-STRIPE_TEST_PUBLIC_KEY = env("STRIPE_TEST_PUBLIC_KEY")
-STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
+#-----------------------------------
+# DJ-STRIPE 
+#-----------------------------------
 STRIPE_LIVE_MODE = env.bool("STRIPE_LIVE_MODE", default=False)
 DJSTRIPE_WEBHOOK_SECRET = env("DJSTRIPE_WEBHOOK_SECRET")  # We don't use this, but it must be set
 DJSTRIPE_USE_NATIVE_JSONFIELD = False
@@ -328,35 +305,29 @@ DJSTRIPE_WEBHOOK_VALIDATION="retrieve_event" # verify_signature
 STRIPE_CHECKS_ENABLED = env.bool("STRIPE_CHECKS_ENABLED", default=True)
 if not STRIPE_CHECKS_ENABLED:
     SILENCED_SYSTEM_CHECKS.append("djstripe.C001")
+    
+    
+#-----------------------------------
+# SUBSCRIPTION
+#-----------------------------------
 SUBSCRIPTION_ENABLE = env.bool("SUBSCRIPTION_ENABLE", default=True)
 SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE = env.bool("SUBSCRIPTION_HAS_TRIAL_PERIOD_OR_FREE", default=True)
 SUBSCRIPTION_TRIAL_PERIOD_DAYS = env.int("SUBSCRIPTION_TRIAL_PERIOD_DAYS", default=7)
 SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID = env("SUBSCRIPTION_TRIAL_PRODUCT_ID", default=None)
 
 
+#-----------------------------------
+# AWS WORKER 
+#-----------------------------------
 TASKS_BASE_HANDLER = env("TASKS_BASE_HANDLER", default="common.tasks.Task")
 WORKERS_EVENT_BUS_NAME = env("WORKERS_EVENT_BUS_NAME", default=None)
 AWS_ENDPOINT_URL = env("AWS_ENDPOINT_URL", default=None)
 TASKS_LOCAL_URL = env("TASKS_LOCAL_URL", default=None)
 
+
+#-----------------------------------
+# USER FILE 
+#-----------------------------------
 UPLOADED_DOCUMENT_SIZE_LIMIT = env.int("UPLOADED_DOCUMENT_SIZE_LIMIT", default=10 * 1024 * 1024)
 USER_DOCUMENTS_NUMBER_LIMIT = env.int("USER_DOCUMENTS_NUMBER_LIMIT", default=10)
 
-
-# # Channels configurations
-if DEVELOPMENT_MODE is True:
-    CHANNEL_LAYERS = {
-        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
-    }
-else:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [(
-                    env("REDIS_IP_ADDRESS"), 
-                    env("REDIS_PORT"), 
-                )],
-            },
-        },
-    }

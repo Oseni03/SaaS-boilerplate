@@ -1,4 +1,4 @@
-from config.settings import AUTH_USER_MODEL
+from django.conf import settings
 from django.utils.translation import gettext as _
 from functools import wraps
 
@@ -7,7 +7,7 @@ def context_user_required(cls):
     no_user_error_key = "no_user_in_request"
     no_user_error_msg = "No user provided in request"
 
-    def _context_user(self) -> AUTH_USER_MODEL:
+    def _context_user(self) -> settings.AUTH_USER_MODEL:
         request = getattr(self, 'context', {}).get('request', None)
         return getattr(request, 'user', None)
 
