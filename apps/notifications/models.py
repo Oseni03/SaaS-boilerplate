@@ -11,7 +11,7 @@ from . import managers
 
 class Notification(models.Model):
     id: str = hashid_field.HashidAutoField(primary_key=True)
-    user: settings.AUTH_USER_MODEL = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user: settings.AUTH_USER_MODEL = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     type: str = models.CharField(max_length=64)
 
     created_at: datetime.datetime = models.DateTimeField(auto_now_add=True)
