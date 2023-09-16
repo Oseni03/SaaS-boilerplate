@@ -3,7 +3,8 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.http import HttpResponse
 from django.conf import settings
- 
+ from django.http import HttpResponseBadRequest
+
  
 def subscription_test(user):
     if user.is_subscribed or not settings.SUBSCRIPTION_ENABLE:
@@ -20,3 +21,17 @@ def subscribe_required(redirect_url="finances:pricing"):
             return view(request, *args, **kwargs)
         return _wrapped_view
     return decorator
+
+
+def xhr_request_only(view_func):
+    """
+    this decorators ensures that the view func accepts only 
+    XML HTTP Request i.e request done via fetch or ajax
+    """
+    @functools.wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return view_func(request, *args, **kwargs)
+        print("Can't Process this Request")
+        return HttpResponseBadRequest("Can't Process this Request")
+    return wrapper
