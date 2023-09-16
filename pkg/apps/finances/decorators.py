@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.http import HttpResponse
 from django.conf import settings
- from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest
 
  
 def subscription_test(user):

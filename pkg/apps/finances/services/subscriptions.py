@@ -4,7 +4,6 @@ from django.utils.translation import gettext as _
 from djstripe import models as djstripe_models, enums as djstripe_enums, sync as djstripe_sync
 from django.conf import settings
 
-from .. import models, constants
 from ..exceptions import UserOrCustomerNotDefined, SubscriptionAndPriceDefinedTogether, SubscriptionOrPriceNotDefined
 
 

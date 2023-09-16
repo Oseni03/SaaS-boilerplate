@@ -18,8 +18,6 @@ class Product(djstripe_models.Product):
 class Price(djstripe_models.Price):
     class Meta:
         proxy = True
-
-    objects = managers.PriceManager()
     
     def get_absolute_url(self):
         return reverse("finances:pricing_payment", kwargs={"price_id": self.id,})

@@ -8,7 +8,7 @@ from djstripe import models as djstripe_models, enums as djstripe_enums
 from django import forms
 from django.core import exceptions
 
-from . import models, constants, utils
+from . import models, utils
 from .services import subscriptions, customers
 
 

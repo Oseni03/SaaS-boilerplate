@@ -11,24 +11,21 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
 from django.views.generic import View
+from django.utils.decorators import method_decorator
 
 
 import qrcode
 
-from . import notifications, forms, models, tokens, jwt
+from . import notifications, forms, models, tokens, jwt, decorators
 from .services import otp as otp_services
 
 
 # Create your views here.
+@method_decorator(decorators.authentication_not_required, name="dispatch")
 class LoginView(FormView):
     form_class = forms.UserLoginForm
     template_name = "users/login.html" 
     success_url = reverse_lazy("users:profile") 
-    
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated:
-            return redirect("users:profile")
-        return super().dispatch(request, *args, **kwargs)
     
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -123,6 +120,7 @@ class UserProfileView(LoginRequiredMixin, View):
         return render(request, "users/profile.html", context)
 
 
+@method_decorator(decorators.authentication_not_required, name="dispatch")
 class SignUpView(FormView):
     form_class = forms.UserSignupForm
     template_name = "users/signup.html" 

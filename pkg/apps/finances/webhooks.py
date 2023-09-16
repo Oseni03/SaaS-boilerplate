@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.conf import settings
 from djstripe import webhooks, models as djstripe_models
 
-from . import constants, notifications, models
+from . import notifications, models
 from .services import subscriptions, customers, charges
 
 logger = logging.getLogger(__name__)

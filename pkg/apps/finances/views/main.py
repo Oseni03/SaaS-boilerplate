@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import View
 from django.views.generic import TemplateView
+from django.utils.decorators import method_decorator
 from djstripe import models as djstripe_models
 
 from ..services import customers, subscriptions 
@@ -70,10 +71,12 @@ class PricingPayment(LoginRequiredMixin, View):
             return JsonResponse({"error": {'message': e.user_message}}, status=400)
 
 
+@method_decorator(subscribe_required, name="dispatch")
 class SubscriptionPage(LoginRequiredMixin, TemplateView):
     template_name = "finances/profile_subscription.html"
 
 
+@method_decorator(subscribe_required, name="dispatch")
 class CancelSubscription(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         subscriptions.cancel_active_subscription(request.user)
