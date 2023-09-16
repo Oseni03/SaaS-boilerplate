@@ -7,7 +7,7 @@ from django.http import HttpResponseBadRequest
 
  
 def subscription_test(user):
-    if user.is_subscribed or not settings.SUBSCRIPTION_ENABLE:
+    if user.is_subscribed:
         return True
     return False
 
