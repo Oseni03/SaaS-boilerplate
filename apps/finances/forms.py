@@ -5,7 +5,8 @@ from django.utils import timezone
 from django.core import validators
 from django.utils.translation import gettext as _
 from djstripe import models as djstripe_models, enums as djstripe_enums
-from django import forms, exceptions
+from django import forms
+from django.core import exceptions
 
 from . import models, constants, utils
 from .services import subscriptions, customers
@@ -62,7 +63,7 @@ class PriceForm(forms.ModelForm):
 class CancelUserActiveSubscriptionForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
-        if subscriptions.is_current_schedule_phase_plan(schedule=self.instance, plan_config=constants.FREE_PLAN):
+        if subscriptions.is_current_schedule_phase_plan(schedule=self.instance, price_id=settings.SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID):
             raise forms.ValidationError(
                 _('Customer has no paid subscription to cancel'), code='no_paid_subscription'
             )
@@ -70,7 +71,7 @@ class CancelUserActiveSubscriptionForm(forms.ModelForm):
         return cleaned_data
 
     def update(self, instance: djstripe_models.SubscriptionSchedule):
-        free_plan_price = models.Price.objects.get_by_plan(constants.FREE_PLAN)
+        free_plan_price = models.Price.objects.get(id=settings.SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID)
         current_phase = subscriptions.get_current_schedule_phase(schedule=instance)
         next_phase = {'items': [{'price': free_plan_price.id}]}
 

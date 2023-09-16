@@ -1,6 +1,7 @@
 from .admin import AdminRefundView
 
 from .main import (
+    CancelSubscription,
     PricingView,
     PricingPayment,
     SubscriptionPage,
@@ -8,6 +9,7 @@ from .main import (
 
 __all__ = [
     "AdminRefundView",
+    "CancelSubscription",
     "PricingPayment",
     "PricingView",
     "SubscriptionPage",

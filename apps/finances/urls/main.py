@@ -13,4 +13,5 @@ urlpatterns = [
     path("pricing/", views.PricingView.as_view(), name="pricing"),
     path("pricing/<price_id>/payment/", views.PricingPayment.as_view(), name="pricing_payment"),
     path("subscription/", views.SubscriptionPage.as_view(), name="profile_subscription"),
+    path("subscription/cancel", views.CancelSubscription.as_view(), name="cancel_subscription"),
 ]

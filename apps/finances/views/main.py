@@ -10,7 +10,7 @@ from django.views.generic import TemplateView
 from djstripe import models as djstripe_models
 
 from ..services import customers, subscriptions 
-from .. import models
+from .. import models, forms
 
 class PricingView(TemplateView):
     template_name = "finances/pricing.html"
@@ -69,5 +69,11 @@ class PricingPayment(LoginRequiredMixin, View):
             return JsonResponse({"error": {'message': e.user_message}}, status=400)
 
 
-class SubscriptionPage(TemplateView):
+class SubscriptionPage(LoginRequiredMixin, TemplateView):
     template_name = "finances/profile_subscription.html"
+
+
+class CancelSubscription(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        subscriptions.cancel_active_subscription(request.user)
+        return redirect("users:profile")

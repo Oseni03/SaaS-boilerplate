@@ -105,7 +105,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     @property
     def customer(self):
-        customer = djstripe_models.Customer.filter(subscriber=self)
+        customer = djstripe_models.Customer.objects.filter(subscriber=self)
         if customer.exists():
             return customer.first()
         # customer.active_subscriptions

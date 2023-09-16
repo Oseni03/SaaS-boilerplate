@@ -1,6 +1,8 @@
 import pytz
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from djstripe import models as djstripe_models, enums as djstripe_enums, sync as djstripe_sync
+from django.conf import settings
 
 from .. import models, constants
 from ..exceptions import UserOrCustomerNotDefined, SubscriptionAndPriceDefinedTogether, SubscriptionOrPriceNotDefined
@@ -14,8 +16,13 @@ def initialize_user(user):
     :param user:
     :return:
     """
-    free_product = models.Product.objects.get(id=settings.SUBSCRIPTION_TRIAL_OR_FREE_PRODUCT_ID)
-    create_schedule(customer=event.customer, price=free_product.default_price)
+    customer, _ = djstripe_models.Customer.get_or_create(user)
+    if settings.SUBSCRIPTION_HAS_FREE_PLAN:
+        price = models.Price.objects.get(id=settings.SUBSCRIPTION_FREE_PRICE_ID)
+        create_schedule(customer=customer, price=price)
+    elif settings.SUBSCRIPTION_HAS_TRIAL_PLAN:
+        price = models.Price.objects.get(id=settings.SUBSCRIPTION_TRIAL_PRICE_ID)
+        create_schedule(customer=customer, price=price)
 
 
 def get_schedule(user=None, customer=None):
@@ -80,12 +87,11 @@ def get_current_schedule_phase(schedule):
 
 
 def is_current_schedule_phase_plan(
-    schedule: djstripe_models.SubscriptionSchedule, plan_config: constants.SubscriptionPlanConfig
+    schedule: djstripe_models.SubscriptionSchedule, price_id
 ):
     current_phase = get_current_schedule_phase(schedule)
     current_price_id = current_phase['items'][0]['price']
-    current_price = djstripe_models.Price.objects.get(id=current_price_id)
-    return current_price.product.name == plan_config.name
+    return current_price_id == price_id
 
 
 def is_current_schedule_phase_trialing(schedule: djstripe_models.SubscriptionSchedule):
@@ -95,3 +101,26 @@ def is_current_schedule_phase_trialing(schedule: djstripe_models.SubscriptionSch
 
     trial_end = timezone.datetime.fromtimestamp(current_phase['trial_end'], tz=pytz.UTC)
     return trial_end > timezone.now()
+
+
+def cancel_active_subscription(user):
+    instance = djstripe_models.SubscriptionSchedule.objects.filter(customer=user.customer).order_by("-created").first()
+    if is_current_schedule_phase_plan(schedule=instance, price_id=settings.SUBSCRIPTION_TRIAL_PRICE_ID) or is_current_schedule_phase_plan(schedule=instance, price_id=settings.SUBSCRIPTION_FREE_PRICE_ID):
+        raise _('Customer has no paid subscription to cancel')
+    
+    if settings.SUBSCRIPTION_HAS_FREE_PLAN:
+        next_phase = {'items': [{'price': settings.SUBSCRIPTION_FREE_PRICE_ID}]}
+    else:
+        next_phase = {}
+        
+    current_phase = get_current_schedule_phase(schedule=instance)
+
+    if is_current_schedule_phase_trialing(schedule=instance):
+        current_phase['end_date'] = current_phase['trial_end']
+
+    return update_schedule(instance, phases=[current_phase, next_phase])
+
+
+def get_subscriptions(user):
+    customer, _ = djstripe_models.Customer.get_or_create(user)
+    return djstripe_models.Subscription.objects.filter(customer=customer).order_by("-created")
