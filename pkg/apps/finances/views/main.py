@@ -12,7 +12,7 @@ from djstripe import models as djstripe_models
 
 from ..services import customers, subscriptions 
 from .. import models, forms
-from ..decorators import subscribe_required
+from ..decorators import subscribe_required, xhr_request_only
 
 class PricingView(TemplateView):
     template_name = "finances/pricing.html"
@@ -26,6 +26,7 @@ class PricingView(TemplateView):
         return context 
 
 
+@method_decorator(xhr_request_only, name="dispatch")
 class PricingPayment(LoginRequiredMixin, View):
     
     def get(self, request, price_id, *args, **kwargs):
