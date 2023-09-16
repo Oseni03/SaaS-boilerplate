@@ -11,6 +11,7 @@ from djstripe import models as djstripe_models
 
 from ..services import customers, subscriptions 
 from .. import models, forms
+from ..docorators import subscribe_required
 
 class PricingView(TemplateView):
     template_name = "finances/pricing.html"
