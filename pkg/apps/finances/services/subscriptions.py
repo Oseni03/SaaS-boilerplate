@@ -47,7 +47,10 @@ def create_schedule(
             raise UserOrCustomerNotDefined("Either user or customer must be defined")
 
         subscription_schedule_stripe_instance = djstripe_models.SubscriptionSchedule._api_create(
-            customer=customer.id, start_date='now', end_behavior="release", phases=[{'items': [{'price': price.id}]}]
+            customer=customer.id, 
+            start_date='now', 
+            end_behavior="release", 
+            phases=[{'items': [{'price': price.id}]}]
         )
 
     if subscription:
@@ -103,8 +106,8 @@ def is_current_schedule_phase_trialing(schedule: djstripe_models.SubscriptionSch
 
 
 def cancel_active_subscription(user):
-    instance = djstripe_models.SubscriptionSchedule.objects.filter(customer=user.customer).order_by("-created").first()
-    if is_current_schedule_phase_plan(schedule=instance, price_id=settings.SUBSCRIPTION_TRIAL_PRICE_ID) or is_current_schedule_phase_plan(schedule=instance, price_id=settings.SUBSCRIPTION_FREE_PRICE_ID):
+    instance = get_schedule(user=user)
+    if not has_paid_subscription(user):
         raise _('Customer has no paid subscription to cancel')
     
     if settings.SUBSCRIPTION_HAS_FREE_PLAN:
@@ -120,6 +123,22 @@ def cancel_active_subscription(user):
     return update_schedule(instance, phases=[current_phase, next_phase])
 
 
-def get_subscriptions(user):
-    customer, _ = djstripe_models.Customer.get_or_create(user)
-    return djstripe_models.Subscription.objects.filter(customer=customer).order_by("-created")
+def has_paid_subscription(user):
+    instance = get_schedule(user=user)
+    if is_current_schedule_phase_plan(schedule=instance, price_id=settings.SUBSCRIPTION_TRIAL_PRICE_ID) or is_current_schedule_phase_plan(schedule=instance, price_id=settings.SUBSCRIPTION_FREE_PRICE_ID):
+        return False
+    return True
+
+
+def upgrade_active_subscription(user, price_id):
+    instance = get_schedule(user=user)
+    
+    next_phase = {
+        'items': [{'price': price_id}],
+        "start_date": "now"
+    }
+    
+    current_phase = get_current_schedule_phase(schedule=instance)
+    current_phase["end_date"] = "now"
+    
+    return update_schedule(instance, phases=[current_phase, next_phase])

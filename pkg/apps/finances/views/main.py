@@ -47,6 +47,9 @@ class PricingPayment(LoginRequiredMixin, View):
         (customer, _) = djstripe_models.Customer.get_or_create(request.user)
         customers.set_default_payment_method(request.user, payment_method_id)
         
+        if subscriptions.has_paid_subscription(request.user):
+            print("Subscription upgrade")
+        
         try:
             sub = djstripe_models.Subscription._api_create(
                 price=price_id,
