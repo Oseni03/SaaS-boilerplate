@@ -3,6 +3,7 @@ from typing import List
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth import update_session_auth_hash
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -24,3 +25,12 @@ def generate_otp_auth_token(user):
     otp_auth_token.set_exp(from_time=timezone.now(), lifetime=settings.OTP_AUTH_TOKEN_LIFETIME_MINUTES)
 
     return OTP_AUTH_TOKEN_LIFETIME_MINUTES
+
+
+def logout_on_password_change(request, user):
+    # Since it is the default behavior of Django to invalidate all sessions on
+    # password change, this function actually has to preserve the session when
+    # logout isn't desired.
+    if not settings.LOGOUT_ON_PASSWORD_CHANGE:
+        update_session_auth_hash(request, user)
+        

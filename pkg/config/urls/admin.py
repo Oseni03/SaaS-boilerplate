@@ -4,6 +4,10 @@ from django.conf import settings
 
 import debug_toolbar
 
+from django.contrib.auth.decorators import login_required
+
+admin.site.login = login_required(admin.site.login)
+
 urlpatterns = [
     path("", admin.site.urls),
     path("finances/", include("apps.finances.urls.admin")),

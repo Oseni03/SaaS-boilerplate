@@ -28,7 +28,7 @@ def xhr_request_only(view_func):
     this decorators ensures that the view func accepts only 
     XML HTTP Request i.e request done via fetch or ajax
     """
-    @functools.wraps(view_func)
+    @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return view_func(request, *args, **kwargs)

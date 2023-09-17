@@ -18,7 +18,7 @@ def authentication_not_required(view_func, redirect_url="users:profile"):
     return wrapper
 
 
-def verification_required(view_func, verification_url="users:activation_resend"):
+def verified_email_required(view_func, verification_url="users:activation_resend"):
     """
         this decorator restricts users who have not been verified
         from accessing the view function passed as it argument and

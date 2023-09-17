@@ -13,19 +13,22 @@ from django.views.generic.edit import FormView
 from django.views.generic import View
 from django.utils.decorators import method_decorator
 
+from allauth.decorators import rate_limit
+from allauth.core import ratelimit
 
 import qrcode
 
-from . import notifications, forms, models, tokens, jwt, decorators
+from . import notifications, forms, models, tokens, jwt, decorators, utils
 from .services import otp as otp_services
 
 
 # Create your views here.
 @method_decorator(decorators.authentication_not_required, name="dispatch")
+@method_decorator(rate_limit(action="login"), name="dispatch")
 class LoginView(FormView):
     form_class = forms.UserLoginForm
     template_name = "users/login.html" 
-    success_url = reverse_lazy("users:profile") 
+    success_url = reverse_lazy("users:profile")
     
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -63,6 +66,7 @@ class LogoutView(LoginRequiredMixin, View):
 
 
 class UserProfileView(LoginRequiredMixin, View):
+    
     def get(self, request, *args, **kwargs):
         profile = models.UserProfile.objects.prefetch_related("user", "avatar").get(user=request.user)
         profile_data = {
@@ -112,6 +116,7 @@ class UserProfileView(LoginRequiredMixin, View):
             password_change_form = forms.UserAccountChangePasswordForm(user=request.user, data=request.POST)
             if password_change_form.is_valid():
                 password_change_form.save()
+                utils.logout_on_password_change(request, request.user)
                 messages.success(request, "Password change successful!")
             else:
                 for error in password_change_form.errors.values():
@@ -121,15 +126,11 @@ class UserProfileView(LoginRequiredMixin, View):
 
 
 @method_decorator(decorators.authentication_not_required, name="dispatch")
+@method_decorator(rate_limit(action="signup"), name="dispatch")
 class SignUpView(FormView):
     form_class = forms.UserSignupForm
     template_name = "users/signup.html" 
-    success_url = reverse_lazy("users:profile") 
-    
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated:
-            return redirect("users:profile")
-        return super().dispatch(request, *args, **kwargs)
+    success_url = reverse_lazy("users:profile")
     
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -157,6 +158,7 @@ def account_confirmation(request, user, token):
     return redirect(reverse('users:activation_resend'))
 
 
+@method_decorator(rate_limit(action="manage_email"), name="dispatch")
 class UserAccountResendConfirmationView(FormView):
     form_class = forms.UserAccountResendConfirmationForm
     template_name = "users/confirmation_resend.html" 
@@ -178,6 +180,8 @@ class UserAccountResendConfirmationView(FormView):
         return super().form_valid(form)
     
 
+@method_decorator(rate_limit(action="reset_password"), name="dispatch")
+@method_decorator(decorators.authentication_not_required, name="dispatch")
 class PasswordResetView(FormView):
     form_class = forms.PasswordResetForm
     template_name = "users/password_reset.html" 
@@ -192,12 +196,18 @@ class PasswordResetView(FormView):
             for error in form.errors.values():
                 messages.info(request, error) 
             return self.form_invalid(form)
-            
     
     def form_valid(self, form):
+        r429 = ratelimit.consume_or_429(
+            self.request,
+            action="reset_password_email",
+            key=form.cleaned_data["email"].lower(),
+        )
+        if r429:
+            return r429
         form.save()
         messages.info(self.request, "Email has been sent your email with instructions to reset your password")
-        return super().form_valid(form)
+        return super(PasswordResetView, self).form_valid(form)
 
 
 def password_reset_confirm(request, user, token):
@@ -217,26 +227,6 @@ def password_reset_confirm(request, user, token):
             messages.info(request, error)
     form = forms.PasswordResetConfirmationForm(user)
     return render(request, "users/password_reset_confirm.html", {"form": form})
-
-
-class PasswordResetConfirmationView(View):
-    
-    def post(self, request, user, token, *args, **kwargs):
-        user = get_object_or_404(models.User, id=user)
-        
-        if not tokens.password_reset_token.check_token(user, token):
-            messages.error(request, "Malformed password reset token")
-            return redirect("users:password_reset")
-        form = forms.PasswordResetConfirmationForm(user, request.POST)
-        if form.has_changed():
-            if form.is_valid():
-                form.save()
-                jwt.blacklist_user_tokens(user)
-                messages.success(request, "Password reset successful!")
-                return redirect("users:login")
-            for error in form.errors.values():
-                messages.info(request, error)
-        return render(request, "users/password_reset_confirm.html", {"form": form})
 
 
 def get_qrcode_path(hashid):
