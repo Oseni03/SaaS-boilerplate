@@ -16,5 +16,6 @@ urlpatterns = [
     
     ## OTP URLS
     path("generate-otp/", views.GenerateOTP.as_view(), name="generate_OTP"),
+    path("validate-otp/", views.ValidateOTP.as_view(), name="validate_OTP"),
     path("disable-otp/", views.disableOTP, name="disable_OTP"),
 ]

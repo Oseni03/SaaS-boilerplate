@@ -40,7 +40,7 @@ class UserProfileForm(forms.ModelForm):
         fields = ("first_name", "last_name", "avatar")
 
     @staticmethod
-    def validate_avatar(avatar):
+    def clean_avatar(avatar):
         if avatar and avatar.size > UPLOADED_AVATAR_SIZE_LIMIT:
             raise ValidationError({"avatar": _("Too large file")}, 'too_large')
         return avatar
@@ -252,7 +252,7 @@ class PasswordResetConfirmationForm(SetPasswordForm):
 class VerifyOTPForm(forms.Form):
     otp_token = forms.CharField(help_text=_("Enter token here..."))
 
-    def validate(self):
+    def clean(self):
         otp_services.verify_otp(self.context_user, self.cleaned_data.get("otp_token", ""))
         return True
 
@@ -270,7 +270,7 @@ class ValidateOTPForm(forms.Form):
             pass 
         return {"user": user, **cleaned_data}
     
-    def validate(self):
+    def clean(self):
         user = self.cleaned_data["user"]
         otp_token = self.cleaned_data["otp_token"]
         

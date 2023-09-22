@@ -47,11 +47,13 @@ class LoginView(FormView):
         if user is not None:
             if user.is_active:
                 if user.otp_enabled and user.otp_verified:
-                    notifications.OTPAuthMail(user, {"user_id": user.id.hash, "otp_token": str(generate_otp_auth_token(self.user))})
-                    messages.info(self.request, "Check your email for otp")
+                    context = {
+                        "form": forms.ValidateOTPForm(initial={"user_id": user.id})
+                    }
+                    return render(request, "users/validate_otp.html", context)
                 else:
                     login(self.request, user)
-                    messages.info(self.request, "Login successful!")
+                    messages.success(self.request, "Login successful!")
             else:
                 messages.info(self.request, "Check your emaill to activate your account!")
         else:
@@ -99,7 +101,7 @@ class UserProfileView(LoginRequiredMixin, View):
         if update_form.has_changed():
             if update_form.is_valid():
                 avatar = update_form.cleaned_data["avatar"]
-                update_form.validate_avatar(avatar)
+                update_form.clean_avatar(avatar)
                 update_form.update(profile)
                 messages.success(request, "Profile update successful!")
             else:
@@ -266,13 +268,12 @@ class GenerateOTP(LoginRequiredMixin, FormView):
             return self.form_invalid(form)
         
     def form_valid(self, form):
-        form.validate()
         return super().form_valid(form)
 
 
 class ValidateOTP(FormView):
     """
-    Enabling two-factor authentication with authentication app
+        2FA Authentication 
     """
     
     form_class = forms.ValidateOTPForm
@@ -290,12 +291,13 @@ class ValidateOTP(FormView):
             return self.form_invalid(form)
         
     def form_valid(self, form):
-        form.validate()
+        login(self.request, user)
+        messages.success(self.request, "Login successful!")
         return super().form_valid(form)
 
 
 @login_required
 def disableOTP(request):
     otp_services.disable_otp(request.user)
-    messages.info(request, "OTP authentication disabled successfully!")
+    messages.success(request, "OTP authentication disabled successfully!")
     return redirect(reverse("users:profile"))
