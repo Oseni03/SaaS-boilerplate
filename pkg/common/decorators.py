@@ -18,14 +18,14 @@ def context_user_required(cls):
     else:
         cls.default_error_messages = {no_user_error_key: _(no_user_error_msg)}
 
-    original_validate = cls.validate
+    original_clean = cls.clean
 
-    @wraps(original_validate)
-    def _validate(self):
+    @wraps(original_clean)
+    def _clean(self):
         if not self.context_user:
             self.fail(no_user_error_key)
-        return original_validate(self)
+        return original_clean(self)
 
-    cls.validate = _validate
+    cls.clean = _clean
 
     return cls

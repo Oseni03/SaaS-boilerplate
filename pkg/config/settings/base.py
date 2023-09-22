@@ -1,5 +1,6 @@
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
+from django.contrib import messages
 
 import sys
 import os
@@ -152,6 +153,10 @@ ROOT_HOSTCONF = "config.hosts"
 DEFAULT_HOST = "main"
 PARENT_HOST = "localhost:8000"
 
+
+#-----------------------------------
+# DJANGO TEMPLATES SETTINGS
+#+-----------------------------------
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -167,17 +172,6 @@ TEMPLATES = [
         },
     },
 ]
-
-
-PASSWORD_HASHERS = env.list(
-    "DJANGO_PASSWORD_HASHERS",
-    default=[
-        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-        'django.contrib.auth.hashers.Argon2PasswordHasher',
-        'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
-    ],
-)
 
 
 #-----------------------------------
@@ -216,7 +210,7 @@ SITE_NAME = env("SITE_NAME", default="Saas Boilerplate")
 
 
 #-----------------------------------
-# Password validation
+# PASSWORD SETTINGS & AUTHENTICATION 
 #-----------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -233,7 +227,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 AUTHENTICATION_BACKENDS = [
     # Needed to login by username in Django admin, regardless of `allauth`
     'django.contrib.auth.backends.ModelBackend',
@@ -241,8 +234,19 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
+PASSWORD_HASHERS = env.list(
+    "DJANGO_PASSWORD_HASHERS",
+    default=[
+        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+        'django.contrib.auth.hashers.Argon2PasswordHasher',
+        'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    ],
+)
 
-# Internationalization
+#-----------------------------------
+# INTERNATIONALIZATION
+#-----------------------------------
 
 LANGUAGE_CODE = 'en-us'
 
@@ -298,6 +302,18 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+
+#-----------------------------------
+# MESSAGE TAGS 
+#-----------------------------------
+MESSAGE_TAGS = {
+    messages.DEBUG: "debug",
+    messages.INFO: "info",
+    messages.SUCCESS: "success",
+    messages.WARNING: "warning",
+    messages.ERROR: "danger",
 }
 
 
