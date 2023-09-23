@@ -151,7 +151,7 @@ class UserAccountConfirmationForm(forms.Form):
 
     def save(self, commit=True):
         user = self.cleaned_data.pop("user")
-        user.is_confirmed = True
+        user.is_active = True
         if commit:
             user.save()
         return user

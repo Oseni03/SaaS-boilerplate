@@ -17,6 +17,7 @@ def subscribe_required(redirect_url="finances:pricing"):
         @wraps(view)
         def _wrapped_view(request, *args, **kwargs):
             if not subscription_test(request.user):
+                messages.info(request, "Active subscription required")
                 return redirect(redirect_url)
             return view(request, *args, **kwargs)
         return _wrapped_view

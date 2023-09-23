@@ -142,3 +142,15 @@ def upgrade_active_subscription(user, price_id):
     current_phase["end_date"] = "now"
     
     return update_schedule(instance, phases=[current_phase, next_phase])
+
+
+def downgrade_active_subscription(user, price_id):
+    instance = get_schedule(user=user)
+    
+    next_phase = {
+        'items': [{'price': price_id}],
+    }
+    
+    current_phase = get_current_schedule_phase(schedule=instance)
+    
+    return update_schedule(instance, phases=[current_phase, next_phase])

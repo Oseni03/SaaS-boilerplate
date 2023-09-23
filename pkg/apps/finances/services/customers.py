@@ -49,7 +49,6 @@ def remove_payment_method(payment_method: djstripe_models.PaymentMethod):
         next_default_pm = next(iter([pm for pm in customer_payment_methods if pm != payment_method]), None)
         if next_default_pm:
             set_default_payment_method(customer, next_default_pm)
-
     payment_method.detach()
 
 

@@ -57,7 +57,7 @@ class LoginView(FormView):
             else:
                 messages.info(self.request, "Check your emaill to activate your account!")
         else:
-            messages.info(self.request, "Invalid credentials")
+            messages.error(self.request, "Invalid credentials")
         return super().form_valid(form)
 
 
@@ -106,7 +106,7 @@ class UserProfileView(LoginRequiredMixin, View):
                 messages.success(request, "Profile update successful!")
             else:
                 for error in update_form.errors.values():
-                    messages.info(request, error)
+                    messages.error(request, error)
         
         context = {
             "profile": profile, 
@@ -122,7 +122,7 @@ class UserProfileView(LoginRequiredMixin, View):
                 messages.success(request, "Password change successful!")
             else:
                 for error in password_change_form.errors.values():
-                    messages.info(request, error)
+                    messages.error(request, error)
             context["password_change_form"] = password_change_form
         return render(request, "users/profile.html", context)
 
@@ -141,7 +141,7 @@ class SignUpView(FormView):
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.info(request, error) 
+                messages.error(request, error) 
             return self.form_invalid(form)
         
     def form_valid(self, form):
@@ -156,31 +156,9 @@ def account_confirmation(request, user, token):
         messages.success(request, "Account verification successful!")
         return redirect(reverse('users:profile'))
     for error in form.errors.values():
-        messages.info(request, error)
-    return redirect(reverse('users:activation_resend'))
+        messages.error(request, error)
+    return redirect(reverse('users:login'))
 
-
-@method_decorator(rate_limit(action="manage_email"), name="dispatch")
-class UserAccountResendConfirmationView(FormView):
-    form_class = forms.UserAccountResendConfirmationForm
-    template_name = "users/confirmation_resend.html" 
-    success_url = reverse_lazy("users:profile") 
-    
-    def post(self, request, *args, **kwargs):
-        form_class = self.get_form_class()
-        form = self.get_form(form_class)
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            for error in form.errors.values():
-                messages.info(request, error)
-            return self.form_invalid(form)
-        
-    def form_valid(self, form):
-        form.save()
-        messages.info(self.request, "Account confirmation link sent to your email")
-        return super().form_valid(form)
-    
 
 @method_decorator(rate_limit(action="reset_password"), name="dispatch")
 @method_decorator(decorators.authentication_not_required, name="dispatch")
@@ -196,7 +174,7 @@ class PasswordResetView(FormView):
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.info(request, error) 
+                messages.error(request, error) 
             return self.form_invalid(form)
     
     def form_valid(self, form):
@@ -226,7 +204,7 @@ def password_reset_confirm(request, user, token):
             messages.success(request, "Password reset successful!")
             return redirect("users:login")
         for error in form.errors.values():
-            messages.info(request, error)
+            messages.error(request, error)
     form = forms.PasswordResetConfirmationForm(user)
     return render(request, "users/password_reset_confirm.html", {"form": form})
 
@@ -264,7 +242,7 @@ class GenerateOTP(LoginRequiredMixin, FormView):
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.info(request, error)
+                messages.error(request, error)
             return self.form_invalid(form)
         
     def form_valid(self, form):
@@ -287,7 +265,7 @@ class ValidateOTP(FormView):
             return self.form_valid(form)
         else:
             for error in form.errors.values():
-                messages.info(request, error)
+                messages.error(request, error)
             return self.form_invalid(form)
         
     def form_valid(self, form):
