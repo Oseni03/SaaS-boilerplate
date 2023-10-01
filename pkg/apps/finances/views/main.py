@@ -19,7 +19,6 @@ class PricingView(TemplateView):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         prices = models.Price.objects.prefetch_related("product").all()
-        print(dir(prices[0]))
         context["monthly"] = prices.filter(recurring__interval="month").distinct()
         context["yearly"] = prices.filter(recurring__interval="year")
         return context 
@@ -74,7 +73,7 @@ class PricingPayment(LoginRequiredMixin, View):
             return JsonResponse({"error": {'message': e.user_message}}, status=400)
 
 
-@method_decorator(subscribe_required, name="dispatch")
+# @method_decorator(subscribe_required, name="dispatch")
 class SubscriptionPage(LoginRequiredMixin, TemplateView):
     template_name = "finances/profile_subscription.html"
 

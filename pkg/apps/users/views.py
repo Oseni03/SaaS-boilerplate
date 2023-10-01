@@ -18,7 +18,7 @@ from allauth.core import ratelimit
 
 import qrcode
 
-from . import notifications, forms, models, tokens, jwt, decorators, utils
+from . import forms, models, tokens, jwt, decorators, utils
 from .services import otp as otp_services
 
 
@@ -100,8 +100,9 @@ class UserProfileView(LoginRequiredMixin, View):
         update_form = forms.UserProfileForm(request.POST, initial=profile_data)
         if update_form.has_changed():
             if update_form.is_valid():
-                avatar = update_form.cleaned_data["avatar"]
-                update_form.clean_avatar(avatar)
+                avatar = update_form.cleaned_data.get("avatar", None)
+                if avatar:
+                    update_form.validate_avatar(avatar)
                 update_form.update(profile)
                 messages.success(request, "Profile update successful!")
             else:
@@ -114,7 +115,7 @@ class UserProfileView(LoginRequiredMixin, View):
             "password_change_form": forms.UserAccountChangePasswordForm(request.user),
         }
         
-        if request.POST.get("new_password1") :
+        if request.POST.get("new_password1"):
             password_change_form = forms.UserAccountChangePasswordForm(user=request.user, data=request.POST)
             if password_change_form.is_valid():
                 password_change_form.save()

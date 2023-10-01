@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
     "django_htmx",
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 
@@ -77,9 +79,9 @@ SOCIALACCOUNT_PROVIDERS = {
         # (``socialaccount`` app) containing the required client
         # credentials, or list them here:
         'APP': {
-            'client_id': env("GOOGLE_AUTH_CLIENT_ID", default=""),
-            'secret': env("GOOGLE_AUTH_SECRET_KEY", default=""),
-            'key': env("GOOGLE_AUTH_KEY", default=""),
+            'client_id': env("GOOGLE_AUTH_CLIENT_ID"),
+            'secret': env("GOOGLE_AUTH_SECRET_KEY"),
+            'key': env("GOOGLE_AUTH_KEY"),
         },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {
@@ -89,9 +91,9 @@ SOCIALACCOUNT_PROVIDERS = {
     },
     'facebook': {
         'APP': {
-            'client_id': env("FACEBOOK_AUTH_CLIENT_ID", default=""),
-            'secret': env("FACEBOOK_AUTH_SECRET_KEY", default=""),
-            'key': env("FACEBOOK_AUTH_KEY", default="")
+            'client_id': env("FACEBOOK_AUTH_CLIENT_ID"),
+            'secret': env("FACEBOOK_AUTH_SECRET_KEY"),
+            'key': env("FACEBOOK_AUTH_KEY")
         },
         'METHOD': 'oauth2',
         'SCOPE': ['email', 'public_profile'],
@@ -186,29 +188,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #-----------------------------------
 # EMAIL SETTINGS
 #-----------------------------------
-DEFAULT_FROM_EMAIL = env("AWS_SES_FROM_EMAIL")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 # https://docs.djangoproject.com/en/dev/ref/settings/#server-email
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
-EMAIL_SUBJECT_PREFIX = env("EMAIL_SUBJECT_PREFIX", default="[SaaS]")
+EMAIL_SUBJECT_PREFIX = env("EMAIL_SUBJECT_PREFIX")
 
-
-#-----------------------------------
-# AWS SES SETTINGS(EMAIL)
-#-----------------------------------
-AWS_SES_ACCESS_KEY_ID = env("AWS_SES_ACCESS_KEY_ID")
-AWS_SES_SECRET_ACCESS_KEY = env("AWS_SES_SECRET_ACCESS_KEY")
-AWS_SES_REGION_NAME = env("AWS_SES_REGION_NAME")
-AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
-AWS_SES_FROM_EMAIL = env("AWS_SES_FROM_EMAIL", default="")
-USE_SES_V2 = True
 
 
 #-----------------------------------
 # MY SITE SETTINGS
 #-----------------------------------
-DOMAIN = env("DOMAIN", default="localhost")
-SITE_NAME = env("SITE_NAME", default="Saas Boilerplate")
+DOMAIN = env("DOMAIN")
+SITE_NAME = env("SITE_NAME")
 
 
 #-----------------------------------
@@ -345,7 +337,7 @@ if not STRIPE_CHECKS_ENABLED:
 #-----------------------------------
 # SUBSCRIPTION
 #-----------------------------------
-SUBSCRIPTION_ENABLE = env.bool("SUBSCRIPTION_ENABLE", default=True)
+SUBSCRIPTION_ENABLE = env.bool("SUBSCRIPTION_ENABLE", default=False)
 SUBSCRIPTION_HAS_FREE_PLAN = env.bool("SUBSCRIPTION_HAS_FREE_PLAN", default=False)
 SUBSCRIPTION_HAS_TRIAL_PLAN = env.bool("SUBSCRIPTION_HAS_TRIAL_PLAN", default=True)
 SUBSCRIPTION_TRIAL_PRICE_ID = env("SUBSCRIPTION_TRIAL_PRICE_ID", default="")
@@ -354,17 +346,31 @@ SUBSCRIPTION_TRIAL_PERIOD_DAYS = env.int("SUBSCRIPTION_TRIAL_PERIOD_DAYS", defau
 
 
 #-----------------------------------
-# AWS WORKER 
-#-----------------------------------
-TASKS_BASE_HANDLER = env("TASKS_BASE_HANDLER", default="common.tasks.Task")
-WORKERS_EVENT_BUS_NAME = env("WORKERS_EVENT_BUS_NAME", default=None)
-AWS_ENDPOINT_URL = env("AWS_ENDPOINT_URL", default=None)
-TASKS_LOCAL_URL = env("TASKS_LOCAL_URL", default=None)
-
-
-#-----------------------------------
 # USER FILE 
 #-----------------------------------
 UPLOADED_DOCUMENT_SIZE_LIMIT = env.int("UPLOADED_DOCUMENT_SIZE_LIMIT", default=10 * 1024 * 1024)
 USER_DOCUMENTS_NUMBER_LIMIT = env.int("USER_DOCUMENTS_NUMBER_LIMIT", default=10)
 
+
+#-----------------------------------
+# AI AND OPENAI
+#-----------------------------------
+OPENAI_API_KEY = env("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY")
+
+
+#-----------------------------------
+# REDIS DEFINITION 
+#-----------------------------------
+REDIS_URL = f'{env("REDIS_URL", default="redis://127.0.0.1:6379")}/{0}'
+
+#-----------------------------------
+# CELERY DEFINITION 
+#-----------------------------------
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+# this allows you to schedule items in the Django admin.
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'

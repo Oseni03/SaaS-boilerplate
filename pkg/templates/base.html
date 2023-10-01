@@ -1,15 +1,10 @@
 <!DOCTYPE html>
 {% load static %}
 {% load django_htmx %}
+
 <html lang="en" class="h-100">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Backend Boilerplate</title>
-    <link href="{% static "css/main.min.css" %}" rel="stylesheet">    
-    <link href="{% static "bootstrap-icons/bootstrap-icons.css" %}" rel="stylesheet">    
-    <link href="{% static "css/offcanvas-navbar.css" %}" rel="stylesheet">
+    {% include "partials/_meta.html" %}
     
     {% block extra_css %}
     {% endblock %}
@@ -17,7 +12,7 @@
     {% block extra_js %}
     {% endblock %}
 </head>
-<body class="d-flex flex-column h-100">
+<body class="d-flex flex-column h-100" style="padding-top: 56px;">
     {% include "partials/_header.html" %}
     
     <div class="container">
@@ -32,10 +27,8 @@
     </div>
     
     
-    <script src="{% static "js/jquery.min.js" %}"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     {% csrf_token %}
-    <script src="{% static "js/bootstrap.bundle.min.js" %}"></script>
-    <script src="{% static "js/offcanvas-navbar.js" %}"></script>
-    <script src="{% static "js/htmx.min.js" %}"></script>
+    <script src="{% static 'js/htmx.min.js' %}"></script>
 </body>
 </html>
