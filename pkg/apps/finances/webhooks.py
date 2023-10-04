@@ -85,14 +85,14 @@ def send_email_on_subscription_payment_failure(event: djstripe_models.Event):
     :param event:
     :return:
     """
-    send_mail.delay(enums.SUBSCRIPTION_ERROR, event.customer.subscriber)
+    send_mail.delay(enums.EmailType.SUBSCRIPTION_ERROR, event.customer.subscriber)
 
 
 @webhooks.handler('customer.subscription.trial_will_end')
 def send_email_trial_expires_soon(event: djstripe_models.Event):
     obj = event.data['object']
     expiry_date = timezone.datetime.fromtimestamp(obj['trial_end'], tz=datetime.timezone.utc)
-    send_mail.delay(enums.TRIAL_EXPIRES_SOON, event.customer.subscriber, expiry_date= expiry_date)
+    send_mail.delay(enums.EmailType.TRIAL_EXPIRES_SOON, event.customer.subscriber, expiry_date= expiry_date)
 
 
 @webhooks.handler('customer.subscription')

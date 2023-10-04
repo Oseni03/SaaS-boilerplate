@@ -114,7 +114,7 @@ class UserSignupForm(forms.ModelForm):
         if commit:
             user.save()
         
-        send_mail.delay(enums.ACCOUNT_CONFIRMATION, user)
+        send_mail.delay(enums.EmailType.ACCOUNT_CONFIRMATION, user)
         return user
 
 
@@ -163,7 +163,7 @@ class PasswordResetForm(forms.Form):
     def save(self, commit=True):
         user = self.cleaned_data.pop('user')
         if user:
-            send_mail.delay(enums.PASSWORD_RESET, user)
+            send_mail.delay(enums.EmailType.PASSWORD_RESET, user)
         return user
 
 
