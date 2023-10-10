@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+{% load django_htmx %}
+
+{% block title %}{{ block.super }} Home {% endblock %}
+
+{% block styles %}
+{{ block.super }}
+<link href="{% static 'home/features.css' %}" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'home/templatemo-hexashop.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="p-4 p-md-5 bg-dark text-light">
+    <div class="row flex-md-row-reverse align-items-center g-5 py-5">
+        <div class="col-10 col-sm-8 col-md-6">
+            <img src="{% static 'home/about-left-image.jpg' %}" class="d-block mx-md-auto img-fluid" alt="Bootstrap Themes" width="700" height="500" loading="lazy">
+        </div>
+        <div class="col-md-6">
+            <h1 class="display-5 fw-bold lh-1 mb-3">Responsive left-aligned hero with image</h1>
+            <p class="lead">
+                Quickly design and customize responsive mobile-first sites with Bootstrap, the world’s most popular front-end open source toolkit, featuring Sass variables and mixins, responsive grid system, extensive prebuilt components, and powerful JavaScript plugins.
+            </p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <button type="button" class="btn btn-light btn-lg px-4 me-md-2">Primary</button>
+                <button type="button" class="btn btn-outline-light btn-lg px-4">Default</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section id="services">
+    <div class="container px-4 pt-5">
+        <div class="row row-cols-1 row-cols-md-2 align-items-md-center g-5 py-5">
+            <div class="col d-flex flex-column align-items-start gap-2">
+                <h2 class="fw-bold text-body-emphasis">Left-aligned title explaining these awesome features</h2>
+                <p class="text-body-secondary">
+                    Paragraph of text beneath the heading to explain the heading. We'll add onto it with another sentence and probably just keep going until we run out of words.
+                </p>
+                <a href="#" class="btn btn-dark btn-lg">Primary button</a>
+            </div>
+
+            <div class="col">
+                <div class="row row-cols-1 row-cols-sm-2 g-4">
+                    <div class="col d-flex flex-column gap-2">
+                        <div class="feature-icon-small d-inline-flex align-items-center justify-content-center text-bg-dark bg-gradient fs-4 rounded-3">
+                            <i class="bi bi-collection"></i>
+                        </div>
+                        <h4 class="fw-semibold mb-0 text-body-emphasis">Featured title</h4>
+                        <p class="text-body-secondary">
+                            Paragraph of text beneath the heading to explain the heading.
+                        </p>
+                    </div>
+
+                    <div class="col d-flex flex-column gap-2">
+                        <div class="feature-icon-small d-inline-flex align-items-center justify-content-center text-bg-dark bg-gradient fs-4 rounded-3">
+                            <i class="bi bi-gear-fill"></i>
+                        </div>
+                        <h4 class="fw-semibold mb-0 text-body-emphasis">Featured title</h4>
+                        <p class="text-body-secondary">
+                            Paragraph of text beneath the heading to explain the heading.
+                        </p>
+                    </div>
+
+                    <div class="col d-flex flex-column gap-2">
+                        <div class="feature-icon-small d-inline-flex align-items-center justify-content-center text-bg-dark bg-gradient fs-4 rounded-3">
+                            <i class="bi bi-speedometer"></i>
+                        </div>
+                        <h4 class="fw-semibold mb-0 text-body-emphasis">Featured title</h4>
+                        <p class="text-body-secondary">
+                            Paragraph of text beneath the heading to explain the heading.
+                        </p>
+                    </div>
+
+                    <div class="col d-flex flex-column gap-2">
+                        <div class="feature-icon-small d-inline-flex align-items-center justify-content-center text-bg-dark bg-gradient fs-4 rounded-3">
+                            <i class="bi bi-table"></i>
+                        </div>
+                        <h4 class="fw-semibold mb-0 text-body-emphasis">Featured title</h4>
+                        <p class="text-body-secondary">
+                            Paragraph of text beneath the heading to explain the heading.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- ***** About Area Starts ***** -->
+<div class="about-us" id="about-us">
+    <div class="container">
+        <div class="row gy-4 d-flex justify-content-center align-items-center">
+            <div class="col-md-6">
+                <div class="left-image">
+                    <img src="{% static 'home/about-left-image.jpg' %}" alt="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="right-content">
+                    <h4>About Us &amp; Our Skills</h4>
+                    <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod kon tempor incididunt ut labore.</span>
+                    <div class="quote">
+                        <i class="bi bi-quote-left"></i><p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiuski smod kon tempor incididunt ut labore.
+                        </p>
+                    </div>
+                    <p>
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod kon tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip.
+                    </p>
+                    <ul>
+                        <li><a href="#"><i class="bi bi-facebook"></i></a></li>
+                        <li><a href="#"><i class="bi bi-twitter"></i></a></li>
+                        <li><a href="#"><i class="bi bi-linkedin"></i></a></li>
+                        <li><a href="#"><i class="bi bi-behance"></i></a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ***** About Area Ends ***** -->
+
+<!-- ***** Contact Area Starts ***** -->
+<div class="contact-us">
+    <div class="container">
+        <div class="row d-flex justify-content-center align-items-center gy-4">
+            <div class="col-md-6">
+                <div class="left-image me-2 me-md-0">
+                    <img src="{% static 'home/about-left-image.jpg' %}" alt="">
+                </div>
+            </div>
+            <div class="col-md-6 order-md-first" id="contact-us-form">
+                <div class="section-heading">
+                    <h2>Say Hello. Don't Be Shy!</h2>
+                    <span>Details to details is what makes Hexashop different from the other themes.</span>
+                </div>
+                <form id="contact" hx-post="{% url 'home:contact-us' %}" hx-target="#contact-us-form" hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <fieldset>
+                                <input name="name" type="text" id="name" placeholder="Your name" required="" class="mb-3 mb-md-0">
+                            </fieldset>
+                        </div>
+                        <div class="col-md-6">
+                            <fieldset>
+                                <input name="email" type="text" id="email" placeholder="Your email" required="">
+                            </fieldset>
+                        </div>
+                        <div class="col-md-12">
+                            <fieldset>
+                                <textarea name="message" rows="6" id="message" placeholder="Your message" required=""></textarea>
+                            </fieldset>
+                        </div>
+                        <div class="col-md-12">
+                            <fieldset>
+                                <button type="submit" id="form-submit" class="main-dark-button"><i class="bi bi-send"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ***** Contact Area Ends ***** -->
+    {% endblock %}

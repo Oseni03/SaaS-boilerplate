@@ -133,7 +133,7 @@ class UserProfileView(LoginRequiredMixin, View):
 class SignUpView(FormView):
     form_class = forms.UserSignupForm
     template_name = "users/signup.html" 
-    success_url = reverse_lazy("users:profile")
+    success_url = reverse_lazy("users:login")
     
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -147,6 +147,7 @@ class SignUpView(FormView):
         
     def form_valid(self, form):
         form.save()
+        messages.info(self.request, "Confirm your email to activate your account")
         return super().form_valid(form)
 
 

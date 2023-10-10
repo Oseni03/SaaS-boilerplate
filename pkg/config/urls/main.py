@@ -9,7 +9,13 @@ urlpatterns = [
     path('users/', include('apps.users.urls', namespace="users")),
     path('notifications/', include('apps.notifications.urls', namespace="notifications")),
     path('accounts/', include('allauth.urls')),
+    path('', include('apps.home.urls', namespace="home")),
 ]
+
+handler400 = "config.views.handler_400"
+handler403 = "config.views.handler_403"
+handler404 = "config.views.handler_404"
+handler500 = "config.views.handler_500"
 
 if settings.DEVELOPMENT_MODE is True:
     urlpatterns.append(

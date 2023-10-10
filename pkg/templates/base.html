@@ -4,31 +4,37 @@
 
 <html lang="en" class="h-100">
 <head>
-    {% include "partials/_meta.html" %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}{{ site_name }} -{% endblock %}</title>
     
-    {% block extra_css %}
+    {% block styles %}
+    <link href="{% static 'css/main.min.css' %}" rel="stylesheet">
+    <link href="{% static 'bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
     {% endblock %}
-    
+
     {% block extra_js %}
     {% endblock %}
 </head>
 <body class="d-flex flex-column h-100" style="padding-top: 56px;">
     {% include "partials/_header.html" %}
-    
+
     <div class="container">
         {% include "partials/_messages.html" %}
     </div>
-    
+
     {% block content %}
     {% endblock %}
     
     <div class="container mt-auto">
         {% include "partials/_footer.html" %}
     </div>
-    
-    
+
+    {% block scripts %}
+    {# <script src="{% static 'js/bootstrap.min.js' %}"></script> #}
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    {% csrf_token %}
     <script src="{% static 'js/htmx.min.js' %}"></script>
+    {% endblock %}
 </body>
 </html>

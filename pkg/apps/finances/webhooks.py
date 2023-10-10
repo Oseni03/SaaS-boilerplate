@@ -7,7 +7,8 @@ from djstripe import webhooks, models as djstripe_models
 
 from . import models
 from .services import subscriptions, customers, charges
-from config.celery import send_mail
+from apps.users.tasks import send_mail
+from enums import EmailType
 
 logger = logging.getLogger(__name__)
 
@@ -85,14 +86,14 @@ def send_email_on_subscription_payment_failure(event: djstripe_models.Event):
     :param event:
     :return:
     """
-    send_mail.delay(enums.EmailType.SUBSCRIPTION_ERROR, event.customer.subscriber)
+    send_mail.delay(EmailType.SUBSCRIPTION_ERROR.value, str(event.customer.subscriber.id))
 
 
 @webhooks.handler('customer.subscription.trial_will_end')
 def send_email_trial_expires_soon(event: djstripe_models.Event):
     obj = event.data['object']
     expiry_date = timezone.datetime.fromtimestamp(obj['trial_end'], tz=datetime.timezone.utc)
-    send_mail.delay(enums.EmailType.TRIAL_EXPIRES_SOON, event.customer.subscriber, expiry_date= expiry_date)
+    send_mail.delay(EmailType.TRIAL_EXPIRES_SOON.value, str(event.customer.subscriber.id), expiry_date=expiry_date)
 
 
 @webhooks.handler('customer.subscription')

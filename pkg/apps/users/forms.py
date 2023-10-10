@@ -12,11 +12,11 @@ from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 
 from common.decorators import context_user_required
 
-import enums
+from enums import EmailType
 from .services import otp as otp_services
 from .utils import generate_otp_auth_token
 from .models import User, UserProfile, UserAvatar
-from config.celery import send_mail
+from .tasks import send_mail
 from . import models, tokens
 
 UPLOADED_AVATAR_SIZE_LIMIT = 1 * 1024 * 1024
@@ -114,7 +114,7 @@ class UserSignupForm(forms.ModelForm):
         if commit:
             user.save()
         
-        send_mail.delay(enums.EmailType.ACCOUNT_CONFIRMATION, user)
+        send_mail.delay(EmailType.ACCOUNT_CONFIRMATION.value, str(user.id))
         return user
 
 
@@ -163,13 +163,17 @@ class PasswordResetForm(forms.Form):
     def save(self, commit=True):
         user = self.cleaned_data.pop('user')
         if user:
-            send_mail.delay(enums.EmailType.PASSWORD_RESET, user)
+            send_mail.delay(EmailType.PASSWORD_RESET.value, str(user.id))
         return user
 
 
 class PasswordResetConfirmationForm(SetPasswordForm):
-    new_password1 = forms.CharField(label="New Password", widget=forms.PasswordInput(render_value=False), help_text=_("Minimum of 8 characters..."))
-    
+    new_password1 = forms.CharField(
+        label="New Password", 
+        widget=forms.PasswordInput(render_value=False), 
+        help_text=_("Minimum of 8 characters...")
+    )
+
 
 @context_user_required
 class VerifyOTPForm(forms.Form):

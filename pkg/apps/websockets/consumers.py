@@ -3,7 +3,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 
 from django.template.loader import render_to_string
-from apps.dashboard.models import Message
+
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     

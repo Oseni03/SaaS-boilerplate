@@ -2,8 +2,11 @@
 {% load static %}
 {% load price_filter %}
 
-{% block extra_css %}
-<link href="{% static "finances/pricing.css" %}" rel="stylesheet">
+{% block title %}{{ block.super }} Pricing{% endblock %}
+
+{% block styles %}
+{{ block.super }}
+<link href="{% static 'finances/pricing.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
